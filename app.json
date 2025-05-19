@@ -1,5 +1,6 @@
 {
   "expo": {
+    "scheme": "tarot42",
     "name": "tarot42-app",
     "slug": "tarot42-app",
     "version": "1.0.0",

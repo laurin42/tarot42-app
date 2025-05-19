@@ -1,0 +1,129 @@
+import { useState } from "react";
+import {
+  View,
+  TextInput,
+  Button,
+  Alert,
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+} from "react-native";
+import { authClient } from "../lib/auth-client";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../types/navigation";
+
+type SignUpScreenProps = NativeStackScreenProps<RootStackParamList, "SignUp">;
+
+export default function SignUpScreen({ navigation }: SignUpScreenProps) {
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSignUp = async () => {
+    if (!name.trim() || !email.trim() || !password.trim()) {
+      Alert.alert("Fehler", "Bitte fülle alle Felder aus.");
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const { data, error } = await authClient.signUp.email({
+        email,
+        password,
+        name,
+      });
+
+      if (error) {
+        console.error("Sign up failed:", error);
+        Alert.alert(
+          "Registrierung fehlgeschlagen",
+          error.message || "Bitte versuche es erneut."
+        );
+      } else if (data) {
+        // Registration succesfull, useSession in App.tsx should do the rest
+      }
+    } catch (err: any) {
+      console.error("An unexpected error occurred during sign up:", err);
+      Alert.alert(
+        "Fehler",
+        err.message || "Ein unerwarteter Fehler ist aufgetreten."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const navigateToSignIn = () => {
+    navigation.navigate("SignIn");
+  };
+  return (
+    <View style={styles.container}>
+      <TextInput
+        placeholder="Name"
+        value={name}
+        onChangeText={setName}
+        style={styles.input}
+        autoCapitalize="words"
+        editable={!isLoading}
+      />
+      <TextInput
+        placeholder="Email"
+        value={email}
+        onChangeText={setEmail}
+        style={styles.input}
+        autoCapitalize="none"
+        keyboardType="email-address"
+        editable={!isLoading}
+      />
+      <TextInput
+        placeholder="Password (mind. 8 Zeichen)"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+        style={styles.input}
+        editable={!isLoading}
+      />
+      <Button
+        title="Registrieren"
+        onPress={handleSignUp}
+        disabled={isLoading}
+      />
+
+      <TouchableOpacity
+        onPress={navigateToSignIn}
+        style={styles.signInLinkContainer}
+        disabled={isLoading}
+      >
+        <Text style={styles.signInLinkText}>
+          Bereits ein Konto?{" "}
+          <Text style={styles.signInLinkTextBold}>Einloggen</Text>
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    padding: 20,
+  },
+  input: {
+    height: 40,
+    borderColor: "gray",
+    borderWidth: 1,
+    marginBottom: 12,
+    paddingHorizontal: 8,
+  },
+  signInLinkContainer: {
+    marginTop: 15,
+    alignItems: "center",
+  },
+  signInLinkText: {
+    color: "blue",
+  },
+  signInLinkTextBold: {
+    fontWeight: "bold",
+  },
+});
