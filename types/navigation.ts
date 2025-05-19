@@ -1,5 +1,6 @@
 export type RootStackParamList = {
-    SignIn: undefined;
-    SignUp: undefined;
     Home: undefined;
+    SignIn: { registrationSuccess?: boolean };
+    SignUp: undefined;
+    // Add other screens here if they exist
   };

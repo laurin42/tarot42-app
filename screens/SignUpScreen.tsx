@@ -40,7 +40,8 @@ export default function SignUpScreen({ navigation }: SignUpScreenProps) {
           error.message || "Bitte versuche es erneut."
         );
       } else if (data) {
-        // Registration succesfull, useSession in App.tsx should do the rest
+        console.log("Sign up successful, data:", data);
+        navigation.navigate("SignIn", { registrationSuccess: true });
       }
     } catch (err: any) {
       console.error("An unexpected error occurred during sign up:", err);
@@ -54,8 +55,9 @@ export default function SignUpScreen({ navigation }: SignUpScreenProps) {
   };
 
   const navigateToSignIn = () => {
-    navigation.navigate("SignIn");
+    navigation.navigate("SignIn", {});
   };
+
   return (
     <View style={styles.container}>
       <TextInput
