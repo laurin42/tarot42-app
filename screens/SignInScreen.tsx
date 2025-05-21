@@ -6,27 +6,40 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
+  Platform,
+  Alert,
 } from "react-native";
 import { authClient } from "../lib/auth-client";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../types/navigation";
+import {
+  GoogleSignin,
+  statusCodes,
+} from "@react-native-google-signin/google-signin";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 // Props-Typen korrekt definieren
-type SignInScreenNavigationProp = NativeStackScreenProps<
-  RootStackParamList,
-  "SignIn"
->["navigation"];
-type SignInScreenRouteProp = NativeStackScreenProps<
-  RootStackParamList,
-  "SignIn"
->["route"];
+// type SignInScreenNavigationProp = NativeStackScreenProps<
+//   RootStackParamList,
+//   "SignIn"
+// >["navigation"];
 
-interface SignInScreenProps {
-  navigation: SignInScreenNavigationProp;
-  route: SignInScreenRouteProp;
-}
+// type SignInScreenRouteProp = NativeStackScreenProps<
+//   RootStackParamList,
+//   "SignIn"
+// >["route"];
 
-export default function SignInScreen({ navigation, route }: SignInScreenProps) {
+// interface SignInScreenProps {
+//   navigation: SignInScreenNavigationProp;
+//   route: SignInScreenRouteProp;
+// }
+
+export default function SignInScreen() {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList, "SignIn">>();
+  const route = useRoute<RouteProp<RootStackParamList, "SignIn">>();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorText, setErrorText] = useState("");
@@ -34,15 +47,18 @@ export default function SignInScreen({ navigation, route }: SignInScreenProps) {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   useEffect(() => {
-    // Prüft, ob der Parameter 'registrationSuccess' von SignUpScreen übergeben wurde
-    if (route.params?.registrationSuccess) {
-      setInfoText(
-        "Registrierung erfolgreich! Bitte überprüfe dein E-Mail-Postfach und klicke auf den Bestätigungslink. Danach kannst du dich hier anmelden."
+    if (route.params?.registrationSuccess === "true") {
+      Alert.alert(
+        "Registrierung erfolgreich",
+        "Du kannst dich jetzt anmelden."
       );
-      // Wichtig: Den Parameter zurücksetzen, damit die Nachricht nicht bei jeder Rückkehr zum Screen erneut erscheint
       navigation.setParams({ registrationSuccess: undefined });
     }
-  }, [route.params?.registrationSuccess, navigation]); // Abhängigkeiten des Effekts
+    if (route.params?.accountDeleted === "true") {
+      Alert.alert("Kontolöschung erfolgreich", "Dein Konto wurde gelöscht.");
+      navigation.setParams({ accountDeleted: undefined });
+    }
+  }, [route.params, navigation]);
 
   const handleLogin = async () => {
     setErrorText("");
@@ -79,24 +95,47 @@ export default function SignInScreen({ navigation, route }: SignInScreenProps) {
   };
 
   const handleGoogleSignIn = async () => {
-    const appScheme = "tarot42";
     setIsGoogleLoading(true);
     setErrorText("");
     setInfoText("");
+
     try {
-      console.log("Attempting Google Sign-In...");
-      const result = await authClient.signIn.social({
-        provider: "google",
-        callbackURL: "http://localhost:8081/home",
-      });
-      console.log("Google Sign-In result:", result);
+      console.log("Checking for Google Play Services...");
+      await GoogleSignin.hasPlayServices();
+      console.log("Attempting Google Sign-In with native SDK...");
+      const userInfo = await GoogleSignin.signIn();
+      console.log("Google Sign-In userInfo:", userInfo);
+
+      if (userInfo.data && userInfo.data.idToken) {
+        console.log("ID Token received:", userInfo.data.idToken);
+        console.log("Attempting to sign in with Better Auth using ID token...");
+        const result = await authClient.signIn.social({
+          provider: "google",
+          idToken: {
+            token: userInfo.data.idToken,
+          },
+          callbackURL: "/dashboard", // Für In-App Navigation nach erfolgreichem Better Auth Login
+        });
+        console.log("Better Auth Sign-In result with ID Token:", result);
+      } else {
+        throw new Error(
+          "Google Sign-In succeeded but no ID token was returned."
+        );
+      }
     } catch (error: any) {
       console.error("Google Sign-In failed:", error);
-      if (error.message) {
-        setErrorText(`Google Login fehlgeschlagen: ${error.message}`);
-      } else {
-        setErrorText("Google Login fehlgeschlagen. Bitte versuche es erneut.");
+      let errorMessage =
+        "Google Login fehlgeschlagen. Bitte versuche es erneut.";
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        errorMessage = "Google Login abgebrochen.";
+      } else if (error.code === statusCodes.IN_PROGRESS) {
+        errorMessage = "Google Login läuft bereits.";
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        errorMessage = "Google Play Services nicht verfügbar oder veraltet.";
+      } else if (error.message) {
+        errorMessage = `Google Login fehlgeschlagen: ${error.message}`;
       }
+      setErrorText(errorMessage);
     } finally {
       setIsGoogleLoading(false);
     }
