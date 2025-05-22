@@ -9,12 +9,11 @@ import {
   StyleSheet,
 } from "react-native";
 import { authClient } from "../lib/auth-client";
-import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import type { RootStackParamList } from "../types/navigation";
+import { useRouter, Link } from "expo-router";
 
-type SignUpScreenProps = NativeStackScreenProps<RootStackParamList, "SignUp">;
+export default function SignUpScreen() {
+  const router = useRouter();
 
-export default function SignUpScreen({ navigation }: SignUpScreenProps) {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
@@ -27,35 +26,26 @@ export default function SignUpScreen({ navigation }: SignUpScreenProps) {
     }
     setIsLoading(true);
     try {
-      const { data, error } = await authClient.signUp.email({
+      await authClient.signUp.email({
         email,
         password,
         name,
       });
 
-      if (error) {
-        console.error("Sign up failed:", error);
-        Alert.alert(
-          "Registrierung fehlgeschlagen",
-          error.message || "Bitte versuche es erneut."
-        );
-      } else if (data) {
-        console.log("Sign up successful, data:", data);
-        navigation.navigate("SignIn", { registrationSuccess: true });
-      }
+      router.replace({
+        pathname: "/signIn",
+        params: { registrationSuccess: "true" },
+      });
     } catch (err: any) {
       console.error("An unexpected error occurred during sign up:", err);
       Alert.alert(
-        "Fehler",
-        err.message || "Ein unerwarteter Fehler ist aufgetreten."
+        "Registrierung fehlgeschlagen",
+        err.message ||
+          "Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut."
       );
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const navigateToSignIn = () => {
-    navigation.navigate("SignIn", {});
   };
 
   return (
@@ -91,16 +81,17 @@ export default function SignUpScreen({ navigation }: SignUpScreenProps) {
         disabled={isLoading}
       />
 
-      <TouchableOpacity
-        onPress={navigateToSignIn}
-        style={styles.signInLinkContainer}
-        disabled={isLoading}
-      >
-        <Text style={styles.signInLinkText}>
-          Bereits ein Konto?{" "}
-          <Text style={styles.signInLinkTextBold}>Einloggen</Text>
-        </Text>
-      </TouchableOpacity>
+      <Link href="/signIn" asChild>
+        <TouchableOpacity
+          style={styles.signInLinkContainer}
+          disabled={isLoading}
+        >
+          <Text style={styles.signInLinkText}>
+            Bereits ein Konto?{" "}
+            <Text style={styles.signInLinkTextBold}>Einloggen</Text>
+          </Text>
+        </TouchableOpacity>
+      </Link>
     </View>
   );
 }

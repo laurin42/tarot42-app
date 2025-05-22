@@ -8,7 +8,7 @@ const backendBaseURL = Platform.OS === 'web'
     ? "http://localhost:3000/api/auth" 
     : "http://192.168.178.67:3000/api/auth";
 
-export const authClient = createAuthClient({
+const client = createAuthClient({
     baseURL: backendBaseURL, /* Base URL of Better Auth backend. */
     plugins: [
         expoClient({
@@ -18,3 +18,6 @@ export const authClient = createAuthClient({
         })
     ]
 });
+
+export const authClient = client;
+export const useAuth = client.useSession; // Export useSession as useAuth
