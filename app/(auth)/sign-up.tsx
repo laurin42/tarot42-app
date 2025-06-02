@@ -8,13 +8,11 @@ import {
   Text,
   StyleSheet,
 } from "react-native";
-import { authClient } from "../lib/auth-client";
-import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import type { RootStackParamList } from "../types/navigation";
+import { authClient } from "../../lib/auth-client"; // Adjusted path
+import { useRouter, Href } from "expo-router";
 
-type SignUpScreenProps = NativeStackScreenProps<RootStackParamList, "SignUp">;
-
-export default function SignUpScreen({ navigation }: SignUpScreenProps) {
+export default function SignUpScreen() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
@@ -41,7 +39,10 @@ export default function SignUpScreen({ navigation }: SignUpScreenProps) {
         );
       } else if (data) {
         console.log("Sign up successful, data:", data);
-        navigation.navigate("SignIn", { registrationSuccess: true });
+        router.replace({
+          pathname: "/(auth)/sign-in",
+          params: { registrationSuccess: "true" },
+        });
       }
     } catch (err: any) {
       console.error("An unexpected error occurred during sign up:", err);
@@ -55,7 +56,7 @@ export default function SignUpScreen({ navigation }: SignUpScreenProps) {
   };
 
   const navigateToSignIn = () => {
-    navigation.navigate("SignIn", {});
+    router.push("/(auth)/sign-in" as Href);
   };
 
   return (
