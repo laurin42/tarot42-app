@@ -8,8 +8,8 @@ import {
   Text,
   StyleSheet,
 } from "react-native";
-import { authClient } from "../../lib/auth-client"; // Adjusted path
-import { useRouter, Href } from "expo-router";
+import { authClient } from "../../lib/auth-client";
+import { useRouter, Href, Link } from "expo-router";
 
 export default function SignUpScreen() {
   const router = useRouter();
@@ -47,8 +47,9 @@ export default function SignUpScreen() {
     } catch (err: any) {
       console.error("An unexpected error occurred during sign up:", err);
       Alert.alert(
-        "Fehler",
-        err.message || "Ein unerwarteter Fehler ist aufgetreten."
+        "Registrierung fehlgeschlagen",
+        err.message ||
+          "Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut."
       );
     } finally {
       setIsLoading(false);
@@ -92,16 +93,17 @@ export default function SignUpScreen() {
         disabled={isLoading}
       />
 
-      <TouchableOpacity
-        onPress={navigateToSignIn}
-        style={styles.signInLinkContainer}
-        disabled={isLoading}
-      >
-        <Text style={styles.signInLinkText}>
-          Bereits ein Konto?{" "}
-          <Text style={styles.signInLinkTextBold}>Einloggen</Text>
-        </Text>
-      </TouchableOpacity>
+      <Link href="/(auth)/sign-in" asChild>
+        <TouchableOpacity
+          style={styles.signInLinkContainer}
+          disabled={isLoading}
+        >
+          <Text style={styles.signInLinkText}>
+            Bereits ein Konto?{" "}
+            <Text style={styles.signInLinkTextBold}>Einloggen</Text>
+          </Text>
+        </TouchableOpacity>
+      </Link>
     </View>
   );
 }
