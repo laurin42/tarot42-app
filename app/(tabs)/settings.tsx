@@ -1,4 +1,3 @@
-// app/(tabs)/settings.tsx - Refaktorierte Version
 import {
   View,
   Text,
@@ -9,25 +8,20 @@ import {
 } from "react-native";
 import React from "react";
 import { useRouter } from "expo-router";
+
 import { useUserProfile } from "../../hooks/useUserProfile";
 import { useProfileActions } from "../../hooks/useProfileActions";
 import { getProfileCompleteness } from "../../utils/profileUtils";
+import {
+  getFocusAreaLabel,
+  getGenderLabel,
+} from "../../constants/profileConstants";
+import { ProfileCard } from "../../components/ProfileCard";
+import { ProfileInfoRow } from "../../components/ProfileInfoRow";
+import { EmptyText } from "../../components/EmptyText";
+
 import { styles } from "../../styles/settingsScreen";
 import { Ionicons } from "@expo/vector-icons";
-
-// Konstanten in separate Datei verschieben - constants/profileConstants.ts
-const FOCUS_AREA_LABELS = {
-  financial_career: "Finanzielle/berufliche Deutung",
-  love_relationships: "Liebesleben",
-  personal_development: "Persönliche Entwicklung",
-};
-
-const GENDER_LABELS = {
-  male: "Männlich",
-  female: "Weiblich",
-  diverse: "Divers",
-  prefer_not_to_say: "Keine Angabe",
-};
 
 export default function IchScreen() {
   const router = useRouter();
@@ -47,7 +41,6 @@ export default function IchScreen() {
     isActionLoading: isLoading,
   } = useProfileActions();
 
-  // ✅ Diese Funktion kann später in ProfileCard Komponente
   const renderProfileCard = (
     title: string,
     icon: string,
@@ -122,105 +115,79 @@ export default function IchScreen() {
       </View>
 
       {/* Basic Info */}
-      {renderProfileCard(
-        "Basis-Informationen",
-        "person",
-        <View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>E-Mail:</Text>
-            <Text style={styles.infoValue}>
-              {userProfile?.email || "Nicht angegeben"}
-            </Text>
-          </View>
-          {userProfile?.birthDateTime && (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>
-                {userProfile.includeTime ? "Geburt:" : "Geburtstag:"}
-              </Text>
-              <Text style={styles.infoValue}>{userProfile.birthDateTime}</Text>
-            </View>
-          )}
-          {userProfile?.gender && (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Geschlecht:</Text>
-              <Text style={styles.infoValue}>
-                {GENDER_LABELS[
-                  userProfile.gender as keyof typeof GENDER_LABELS
-                ] || userProfile.gender}
-              </Text>
-            </View>
-          )}
-          {userProfile?.ageRange && (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Altersbereich:</Text>
-              <Text style={styles.infoValue}>{userProfile.ageRange}</Text>
-            </View>
-          )}
-        </View>,
-        !userProfile?.email
-      )}
+      <ProfileCard
+        title="Basis-Informationen"
+        icon="person"
+        isEmpty={!userProfile?.email}
+      >
+        <ProfileInfoRow
+          label="E-Mail"
+          value={userProfile?.email || "Nicht angegeben"}
+        />
+        {userProfile?.birthDateTime && (
+          <ProfileInfoRow
+            label={userProfile.includeTime ? "Geburt" : "Geburtstag"}
+            value={userProfile.birthDateTime}
+          />
+        )}
+        {userProfile?.gender && (
+          <ProfileInfoRow
+            label="Geschlecht"
+            value={getGenderLabel(userProfile.gender)}
+          />
+        )}
+        {userProfile?.ageRange && (
+          <ProfileInfoRow label="Altersbereich" value={userProfile.ageRange} />
+        )}
+      </ProfileCard>
 
       {/* Astrological Info */}
-      {renderProfileCard(
-        "Astrologische Daten",
-        "star",
-        <View>
-          {userProfile?.zodiacSign ? (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Sternzeichen:</Text>
-              <Text style={styles.infoValue}>{userProfile.zodiacSign}</Text>
-            </View>
-          ) : (
-            <Text style={styles.emptyText}>Kein Sternzeichen ausgewählt</Text>
-          )}
-          {userProfile?.element ? (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Element:</Text>
-              <Text style={styles.infoValue}>{userProfile.element}</Text>
-            </View>
-          ) : (
-            <Text style={styles.emptyText}>Kein Element ausgewählt</Text>
-          )}
-        </View>,
-        !userProfile?.zodiacSign && !userProfile?.element
-      )}
+      <ProfileCard
+        title="Astrologische Daten"
+        icon="star"
+        isEmpty={!userProfile?.zodiacSign && !userProfile?.element}
+      >
+        {userProfile?.zodiacSign ? (
+          <ProfileInfoRow label="Sternzeichen" value={userProfile.zodiacSign} />
+        ) : (
+          <EmptyText text="Kein Sternzeichen ausgewählt" />
+        )}
+        {userProfile?.element ? (
+          <ProfileInfoRow label="Element" value={userProfile.element} />
+        ) : (
+          <EmptyText text="Kein Element ausgewählt" />
+        )}
+      </ProfileCard>
 
       {/* Goals & Focus */}
-      {renderProfileCard(
-        "Ziele & Fokus",
-        "target",
-        <View>
-          {userProfile?.personalGoals ? (
-            <View style={styles.goalSection}>
-              <Text style={styles.infoLabel}>Persönliches Ziel:</Text>
-              <Text style={styles.goalText}>{userProfile.personalGoals}</Text>
-            </View>
-          ) : (
-            <Text style={styles.emptyText}>
-              Keine persönlichen Ziele definiert
+      <ProfileCard
+        title="Ziele & Fokus"
+        icon="target"
+        isEmpty={!userProfile?.personalGoals && !userProfile?.focusArea}
+      >
+        {userProfile?.personalGoals ? (
+          <View style={styles.goalSection}>
+            <Text style={styles.infoLabel}>Persönliches Ziel:</Text>
+            <Text style={styles.goalText}>{userProfile.personalGoals}</Text>
+          </View>
+        ) : (
+          <EmptyText text="Keine persönlichen Ziele definiert" />
+        )}
+        {userProfile?.focusArea && (
+          <ProfileInfoRow
+            label="Fokusbereich"
+            value={getFocusAreaLabel(userProfile.focusArea)}
+          />
+        )}
+        {userProfile?.additionalDetails && (
+          <View style={styles.goalSection}>
+            <Text style={styles.infoLabel}>Zusätzliche Details:</Text>
+            <Text style={styles.detailsText}>
+              {userProfile.additionalDetails}
             </Text>
-          )}
-          {userProfile?.focusArea && (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Fokusbereich:</Text>
-              <Text style={styles.infoValue}>
-                {FOCUS_AREA_LABELS[
-                  userProfile.focusArea as keyof typeof FOCUS_AREA_LABELS
-                ] || userProfile.focusArea}
-              </Text>
-            </View>
-          )}
-          {userProfile?.additionalDetails && (
-            <View style={styles.goalSection}>
-              <Text style={styles.infoLabel}>Zusätzliche Details:</Text>
-              <Text style={styles.detailsText}>
-                {userProfile.additionalDetails}
-              </Text>
-            </View>
-          )}
-        </View>,
-        !userProfile?.personalGoals && !userProfile?.focusArea
-      )}
+          </View>
+        )}
+      </ProfileCard>
 
       {/* Action Buttons */}
       <View style={styles.actionSection}>
