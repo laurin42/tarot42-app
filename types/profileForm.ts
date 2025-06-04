@@ -20,7 +20,9 @@ export interface FormCache extends FormData {
   userId: string;
 }
 
-export interface BirthdayData {
+// In deiner Datei: types/profileForm.ts
+
+export interface BirthdayData { // Stelle sicher, dass dieser Typ auch so existiert
   birthDate: Date;
   birthTime: Date;
   manualDateInput: string;
@@ -29,6 +31,22 @@ export interface BirthdayData {
   showTimePicker: boolean;
   useManualInput: boolean;
   includeTime: boolean;
+}
+
+export interface UseBirthdayPickerReturn {
+  birthdayData: BirthdayData;
+  formatDateForDisplay: (date: Date) => string; // Annahme basierend auf dateUtils
+  formatTimeForDisplay: (time: Date) => string; // Annahme basierend auf dateUtils
+  handleDateChange: (event: any, selectedDate?: Date) => void;
+  handleTimeChange: (event: any, selectedTime?: Date) => void;
+  handleManualDateInput: (text: string) => void;
+  handleManualTimeInput: (text: string) => void;
+  getBirthDateTimeString: () => string;
+  setUseManualInput: (value: boolean) => void;
+  setIncludeTime: (value: boolean) => void;
+  setShowDatePicker: (value: boolean) => void;
+  setShowTimePicker: (value: boolean) => void;
+  loadBirthdayData: (birthDateTime?: string) => void; // Wichtig: Hinzufügen!
 }
 
 export interface ProfileData {
@@ -77,21 +95,6 @@ export interface UseFormCacheReturn {
   loadFormCache: () => Promise<boolean>;
   clearFormCache: () => Promise<void>;
   cleanupOldCaches: () => Promise<void>;
-}
-
-export interface UseBirthdayPickerReturn {
-  birthdayData: BirthdayData;
-  formatDateForDisplay: (date: Date) => string;
-  formatTimeForDisplay: (date: Date) => string;
-  handleDateChange: (event: any, selectedDate?: Date) => void;
-  handleTimeChange: (event: any, selectedTime?: Date) => void;
-  handleManualDateInput: (text: string) => void;
-  handleManualTimeInput: (text: string) => void;
-  getBirthDateTimeString: () => string;
-  setUseManualInput: (value: boolean) => void;
-  setIncludeTime: (value: boolean) => void;
-  setShowDatePicker: (value: boolean) => void;
-  setShowTimePicker: (value: boolean) => void;
 }
 
 export interface UseProfileSaveReturn {

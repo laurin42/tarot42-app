@@ -50,6 +50,12 @@ export default function goalsScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
+  const { zodiacSign: pZodiacSign, element: pElement } = useLocalSearchParams<{
+    // Destrukturieren und ggf. umbenennen
+    zodiacSign?: string;
+    element?: string;
+  }>();
+
   const { saveFormCache, loadFormCache, clearFormCache } = useProfileFormCache(
     userId || ""
   );
@@ -125,7 +131,10 @@ export default function goalsScreen() {
 
   useEffect(() => {
     const initializeForm = async () => {
-      console.log("[goalsScreen] Received params:", params);
+      console.log("[goalsScreen] Received params:", {
+        zodiacSign: pZodiacSign,
+        element: pElement,
+      });
       if (!userId) {
         console.log("[goalsScreen] Waiting for userId to initialize form.");
         setIsLoading(false);
@@ -171,7 +180,8 @@ export default function goalsScreen() {
     initializeForm();
   }, [
     userId,
-    params,
+    pZodiacSign,
+    pElement,
     loadFormCache,
     loadExistingProfile,
     birthdayPicker.handleManualDateInput,

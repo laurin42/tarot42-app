@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { getFormCacheKey } from '../constants/profileConstants'; // Annahme: Pfad angepasst
 import type { FormCache } from '../types/profileForm'; // Annahme: FormCache wurde verschoben
@@ -7,21 +8,18 @@ const CACHE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 Stunden
 export function useProfileFormCache(userId: string | "") { // userId kann optional sein
   const formCacheKey = getFormCacheKey(userId); // Dynamischer Key basierend auf userId
 
-  const saveFormCache = async (data: Omit<FormCache, 'lastUpdated'>) => {
-    if (!userId) return; // Nicht speichern, wenn keine userId vorhanden ist
+  const saveFormCache = useCallback(async (data: Omit<FormCache, 'lastUpdated'>) => {
+    if (!userId) return;
     try {
-      const cacheData: FormCache = {
-        ...data,
-        lastUpdated: Date.now(),
-      };
+      const cacheData: FormCache = { ...data, userId, lastUpdated: Date.now() }; // Stelle sicher, dass userId hier auch drin ist, wenn dein Typ es erfordert
       await SecureStore.setItemAsync(formCacheKey, JSON.stringify(cacheData));
       console.log("[useProfileFormCache] Form cache saved for key:", formCacheKey);
     } catch (error) {
       console.log("[useProfileFormCache] Failed to save form cache:", error);
     }
-  };
+  }, [userId, formCacheKey]); 
 
-  const loadFormCache = async (): Promise<FormCache | null> => {
+  const loadFormCache = useCallback(async (): Promise<FormCache | null> => {
     if (!userId) return null;
     try {
       const cachedDataString = await SecureStore.getItemAsync(formCacheKey);
@@ -37,9 +35,9 @@ export function useProfileFormCache(userId: string | "") { // userId kann option
       console.log("[useProfileFormCache] Failed to load form cache for key:", formCacheKey, error);
     }
     return null;
-  };
+  }, [userId, formCacheKey]); 
 
-  const clearFormCache = async () => {
+   const clearFormCache = useCallback(async () => {
     if (!userId) return;
     try {
       await SecureStore.deleteItemAsync(formCacheKey);
@@ -47,7 +45,7 @@ export function useProfileFormCache(userId: string | "") { // userId kann option
     } catch (error) {
       console.log("[useProfileFormCache] Failed to clear form cache for key:", formCacheKey, error);
     }
-  };
+  }, [userId, formCacheKey]);
 
   return { saveFormCache, loadFormCache, clearFormCache };
 }

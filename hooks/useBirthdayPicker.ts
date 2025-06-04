@@ -1,6 +1,7 @@
 // hooks/useBirthdayPicker.ts
-import { useState } from 'react';
-import { UseBirthdayPickerReturn, BirthdayData } from '../types/profileForm';
+import { useState, useCallback } from 'react';
+// Stelle sicher, dass UseBirthdayPickerReturn jetzt loadBirthdayData etc. aus types/profileForm.ts enthält
+import { UseBirthdayPickerReturn, BirthdayData } from '../types/profileForm'; 
 import {
   formatDateForDisplay,
   formatTimeForDisplay,
@@ -13,7 +14,6 @@ import {
 } from '../utils/dateUtils';
 
 export const useBirthdayPicker = (initialBirthDateTime?: string): UseBirthdayPickerReturn => {
-  // Parse initial data if provided
   const parsedInitial = initialBirthDateTime 
     ? parseBirthDateTimeString(initialBirthDateTime)
     : {
@@ -33,7 +33,7 @@ export const useBirthdayPicker = (initialBirthDateTime?: string): UseBirthdayPic
     includeTime: parsedInitial.hasTime,
   });
 
-  const handleDateChange = (event: any, selectedDate?: Date) => {
+  const handleDateChange = useCallback((event: any, selectedDate?: Date) => {
     setBirthdayData(prev => ({
       ...prev,
       showDatePicker: false,
@@ -42,9 +42,9 @@ export const useBirthdayPicker = (initialBirthDateTime?: string): UseBirthdayPic
         manualDateInput: formatDateForDisplay(selectedDate),
       }),
     }));
-  };
+  }, []); 
 
-  const handleTimeChange = (event: any, selectedTime?: Date) => {
+  const handleTimeChange = useCallback((event: any, selectedTime?: Date) => {
     setBirthdayData(prev => ({
       ...prev,
       showTimePicker: false,
@@ -53,85 +53,64 @@ export const useBirthdayPicker = (initialBirthDateTime?: string): UseBirthdayPic
         manualTimeInput: formatTimeForDisplay(selectedTime),
       }),
     }));
-  };
+  }, []);
 
-  const handleManualDateInput = (text: string) => {
-    setBirthdayData(prev => ({
-      ...prev,
-      manualDateInput: text,
-    }));
-
-    // Try to parse and update birthDate if valid
+  const handleManualDateInput = useCallback((text: string) => {
+    setBirthdayData(prev => ({ ...prev, manualDateInput: text }));
     const parsedDate = parseDateFromGermanString(text);
     if (parsedDate) {
-      setBirthdayData(prev => ({
-        ...prev,
-        birthDate: parsedDate,
-      }));
+      setBirthdayData(prev => ({ ...prev, birthDate: parsedDate }));
     }
-  };
+  }, []);
 
-  const handleManualTimeInput = (text: string) => {
-    setBirthdayData(prev => ({
-      ...prev,
-      manualTimeInput: text,
-    }));
-
-    // Try to parse and update birthTime if valid
+  const handleManualTimeInput = useCallback((text: string) => {
+    setBirthdayData(prev => ({ ...prev, manualTimeInput: text }));
     const parsedTime = parseTimeFromString(text);
     if (parsedTime) {
-      setBirthdayData(prev => ({
-        ...prev,
-        birthTime: parsedTime,
-      }));
+      setBirthdayData(prev => ({ ...prev, birthTime: parsedTime }));
     }
-  };
+  }, []);
 
-  const getBirthDateTimeString = (): string => {
+  const getBirthDateTimeString = useCallback((): string => {
     return createBirthDateTimeString(
       birthdayData.manualDateInput,
       birthdayData.manualTimeInput,
       birthdayData.includeTime,
       birthdayData.birthDate
     );
-  };
+  }, [birthdayData.manualDateInput, birthdayData.manualTimeInput, birthdayData.includeTime, birthdayData.birthDate]);
 
-  const setUseManualInput = (value: boolean) => {
-    setBirthdayData(prev => ({
-      ...prev,
-      useManualInput: value,
-    }));
-  };
+  const setUseManualInput = useCallback((value: boolean) => {
+    setBirthdayData(prev => ({ ...prev, useManualInput: value }));
+  }, []);
 
-  const setIncludeTime = (value: boolean) => {
-    setBirthdayData(prev => ({
-      ...prev,
-      includeTime: value,
-    }));
-  };
+  const setIncludeTime = useCallback((value: boolean) => {
+    setBirthdayData(prev => ({ ...prev, includeTime: value }));
+  }, []);
 
-  const setShowDatePicker = (value: boolean) => {
-    setBirthdayData(prev => ({
-      ...prev,
-      showDatePicker: value,
-    }));
-  };
+  const setShowDatePicker = useCallback((value: boolean) => {
+    setBirthdayData(prev => ({ ...prev, showDatePicker: value }));
+  }, []);
 
-  const setShowTimePicker = (value: boolean) => {
-    setBirthdayData(prev => ({
-      ...prev,
-      showTimePicker: value,
-    }));
-  };
+  const setShowTimePicker = useCallback((value: boolean) => {
+    setBirthdayData(prev => ({ ...prev, showTimePicker: value }));
+  }, []);
 
-  // Load new birthday data from external source
-  const loadBirthdayData = (birthDateTime?: string) => {
-    if (!birthDateTime) return;
-    
+  const loadBirthdayData = useCallback((birthDateTime?: string) => {
+    if (!birthDateTime) {
+        setBirthdayData(prev => ({
+            ...prev,
+            birthDate: getDefaultBirthDate(),
+            birthTime: getDefaultBirthTime(),
+            manualDateInput: "01.01.1990",
+            manualTimeInput: "00:00",
+            includeTime: false,
+        }));
+        return;
+    }
     const parsed = parseBirthDateTimeString(birthDateTime);
     const newBirthDate = parseDateFromGermanString(parsed.dateString) || getDefaultBirthDate();
     const newBirthTime = parseTimeFromString(parsed.timeString) || getDefaultBirthTime();
-    
     setBirthdayData(prev => ({
       ...prev,
       birthDate: newBirthDate,
@@ -140,9 +119,9 @@ export const useBirthdayPicker = (initialBirthDateTime?: string): UseBirthdayPic
       manualTimeInput: parsed.timeString,
       includeTime: parsed.hasTime,
     }));
-  };
+  }, []);
 
-  return {
+  return { 
     birthdayData,
     formatDateForDisplay,
     formatTimeForDisplay,
@@ -155,7 +134,6 @@ export const useBirthdayPicker = (initialBirthDateTime?: string): UseBirthdayPic
     setIncludeTime,
     setShowDatePicker,
     setShowTimePicker,
-    // Additional helper
     loadBirthdayData,
-  } as UseBirthdayPickerReturn & { loadBirthdayData: (birthDateTime?: string) => void };
+  }; 
 };
