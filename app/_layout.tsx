@@ -1,3 +1,4 @@
+// app/_layout.tsx
 import { Stack, useRouter, useSegments } from "expo-router";
 import React, { useEffect } from "react";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
@@ -8,12 +9,18 @@ import { useOnboarding } from "../hooks/useOnboarding";
 // Routing Logic Component (inside SessionProvider)
 function AppNavigator() {
   const { isAuthenticated, isLoading: sessionLoading } = useSession();
-  const { shouldShowWelcome, isLoading: onboardingLoading } = useOnboarding();
+  // Hole isOnboardingCompleted (umbenannt zu actualOnboardingCompleted für Klarheit)
+  // UND shouldShowWelcome separat vom useOnboarding Hook
+  const {
+    isOnboardingCompleted: actualOnboardingCompleted,
+    shouldShowWelcome,
+    isLoading: onboardingLoading,
+  } = useOnboarding();
   const router = useRouter();
   const segments = useSegments();
 
   useEffect(() => {
-    // Wait for both session and onboarding to load
+    // Warte, bis Session und Onboarding-Status geladen sind
     if (sessionLoading || onboardingLoading) {
       console.log("[AppNavigator] Loading...", {
         sessionLoading,
@@ -28,49 +35,77 @@ function AppNavigator() {
 
     console.log("[AppNavigator] Routing decision:", {
       isAuthenticated,
-      shouldShowWelcome,
+      actualOnboardingCompleted, // Logge den tatsächlichen Abschluss-Status
+      shouldShowWelcome, // Für spezielle Welcome-Logik
       inAuthGroup,
       inOnboardingGroup,
       currentRoute,
     });
 
     if (isAuthenticated) {
-      // User is signed in
+      // Benutzer ist angemeldet
       if (inAuthGroup) {
-        // User logged in but in auth group
-        if (shouldShowWelcome) {
-          console.log("[AppNavigator] 🎉 NEW USER: Redirecting to welcome");
-          router.replace("/(onboarding)/welcome");
-        } else {
+        // Benutzer ist in der Auth-Gruppe (z.B. kommt gerade vom Login)
+        if (!actualOnboardingCompleted) {
+          // Onboarding ist NICHT abgeschlossen
           console.log(
-            "[AppNavigator] 👤 EXISTING USER: Redirecting to profile"
+            "[AppNavigator] Authenticated, Onboarding INCOMPLETE: Redirecting to welcome"
+          );
+          // Leite zum Welcome-Screen oder zum ersten Schritt des Onboardings
+          // shouldShowWelcome könnte hier verwendet werden, um zu entscheiden, ob /welcome oder ein anderer Screen gezeigt wird
+          router.replace(
+            shouldShowWelcome
+              ? "/(onboarding)/welcome"
+              : "/(onboarding)/zodiacSign"
+          ); // Beispiel
+        } else {
+          // Onboarding IST abgeschlossen
+          console.log(
+            "[AppNavigator] Authenticated, Onboarding COMPLETE: Redirecting to profile"
           );
           router.replace("/(tabs)/profile");
         }
-      } else if (segments.length === 0 || currentRoute === "(tabs)") {
-        // User at root
-        if (shouldShowWelcome) {
+      } else if (inOnboardingGroup) {
+        // Benutzer befindet sich BEREITS in einer Onboarding-Route
+        if (actualOnboardingCompleted) {
+          // Und das Onboarding wird JETZT als abgeschlossen erkannt
           console.log(
-            "[AppNavigator] 🎉 NEW USER AT ROOT: Redirecting to welcome"
-          );
-          router.replace("/(onboarding)/welcome");
-        } else {
-          console.log(
-            "[AppNavigator] 👤 EXISTING USER AT ROOT: Redirecting to profile"
+            "[AppNavigator] ✅ User in onboarding, now COMPLETE: Redirecting to profile"
           );
           router.replace("/(tabs)/profile");
         }
-      } else if (inOnboardingGroup && !shouldShowWelcome) {
-        // User in onboarding but shouldn't be
-        console.log(
-          "[AppNavigator] ❌ User completed onboarding: Redirecting to profile"
-        );
-        router.replace("/(tabs)/profile");
+        // ANSONSTEN: Benutzer ist in der Onboarding-Gruppe und Onboarding ist NICHT abgeschlossen.
+        // -> Hier passiert nichts, der Benutzer darf im Onboarding-Flow bleiben und navigieren.
+      } else if (
+        segments.length === 0 ||
+        currentRoute === "/" ||
+        currentRoute === "(tabs)"
+      ) {
+        // Benutzer ist am Root der App ('/') oder bereits im (tabs)-Bereich
+        if (!actualOnboardingCompleted) {
+          // Onboarding ist aber noch nicht abgeschlossen
+          console.log(
+            "[AppNavigator] User at root/tabs but Onboarding INCOMPLETE: Redirecting to welcome/onboarding"
+          );
+          router.replace(
+            shouldShowWelcome
+              ? "/(onboarding)/welcome"
+              : "/(onboarding)/zodiacSign"
+          ); // Beispiel
+        } else if (segments.length === 0 || currentRoute === "/") {
+          // Benutzer ist am Root UND Onboarding ist abgeschlossen
+          console.log(
+            "[AppNavigator] User at root and Onboarding COMPLETE: Redirecting to profile"
+          );
+          router.replace("/(tabs)/profile");
+        }
+        // Sonst: Benutzer ist in (tabs) und Onboarding ist abgeschlossen -> alles gut, bleibe dort.
       }
-      // else: let user navigate freely
+      // Hier könnten weitere `else if`-Bedingungen für andere Routen-Gruppen stehen, falls nötig
     } else {
-      // User not signed in
+      // Benutzer ist NICHT angemeldet
       if (!inAuthGroup) {
+        // Und befindet sich nicht bereits in der Auth-Gruppe
         console.log(
           "[AppNavigator] 🔐 Not authenticated: Redirecting to sign-in"
         );
@@ -79,14 +114,15 @@ function AppNavigator() {
     }
   }, [
     isAuthenticated,
-    shouldShowWelcome,
+    actualOnboardingCompleted, // Als Hauptkriterium für "abgeschlossen"
+    shouldShowWelcome, // Für die initiale Welcome-Logik
     sessionLoading,
     onboardingLoading,
     segments,
     router,
   ]);
 
-  return null; // This component only handles routing
+  return null; // Diese Komponente rendert keine UI, sie kümmert sich nur um die Navigation
 }
 
 export default function RootLayout() {

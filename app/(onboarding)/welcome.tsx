@@ -9,11 +9,13 @@ import {
 import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { authClient } from "../../lib/auth-client";
+import { useOnboarding } from "../../hooks/useOnboarding";
 
 export default function WelcomeScreen() {
   const router = useRouter();
   const { data: sessionData, isPending: isSessionLoading } =
     authClient.useSession();
+  const { completeOnboarding } = useOnboarding();
 
   useFocusEffect(
     React.useCallback(() => {
@@ -27,8 +29,27 @@ export default function WelcomeScreen() {
     router.push("/(onboarding)/zodiacSign");
   };
 
-  const handleSkip = () => {
-    router.replace("/(tabs)/profile");
+  const handleSkip = async () => {
+    try {
+      console.log(
+        "[WelcomeScreen] User chose to skip onboarding - marking as completed"
+      );
+
+      // Markiere das Onboarding als abgeschlossen
+      await completeOnboarding();
+
+      console.log(
+        "[WelcomeScreen] Onboarding marked as completed, navigating to profile"
+      );
+
+      // Navigiere zum Profil
+      router.replace("/(tabs)/profile");
+    } catch (error) {
+      console.error("[WelcomeScreen] Error completing onboarding:", error);
+
+      // Fallback: Navigiere trotzdem zum Profil
+      router.replace("/(tabs)/profile");
+    }
   };
 
   if (isSessionLoading) {

@@ -18,29 +18,18 @@ export const checkOnboardingStatus = async (userId: string): Promise<OnboardingS
   console.log("[OnboardingUtils] 🔍 Checking status for user:", userId);
   
   try {
-    // 1. Prüfe lokalen Onboarding-Status (SecureStore)
-    const localCompleted = await SecureStore.getItemAsync(`${ONBOARDING_COMPLETED_KEY}_${userId}`);
-    
-    if (localCompleted === "true") {
-      console.log("[OnboardingUtils] ✅ Local onboarding completed");
-      return {
-        isCompleted: true,
-        needsWelcome: false,
-        profileCompleteness: 100,
-        debugInfo: "Locally marked as completed"
-      };
-    }
+    const locallyMarkedCompletedString = await SecureStore.getItemAsync(`${ONBOARDING_COMPLETED_KEY}_${userId}`);
+    const hasBeenLocallyMarkedCompleted = locallyMarkedCompletedString === "true";
 
-    // 2. Prüfe Backend-Vollständigkeit
     const token = await SecureStore.getItemAsync(SECURE_STORE_BEARER_TOKEN_KEY);
-    
+
     if (!token) {
-      console.log("[OnboardingUtils] ❌ No token found - showing welcome");
+      console.log("[OnboardingUtils] ❌ No token found - determining status based on local flag");
       return {
-        isCompleted: false,
-        needsWelcome: true,
+        isCompleted: false, // Kann nicht wirklich "completed" sein ohne Backend-Profil-Check
+        needsWelcome: !hasBeenLocallyMarkedCompleted, // Zeige Welcome, wenn nie zuvor abgeschlossen
         profileCompleteness: 0,
-        debugInfo: "No auth token found"
+        debugInfo: "No auth token found, local completion status used for needsWelcome"
       };
     }
 
@@ -61,32 +50,30 @@ export const checkOnboardingStatus = async (userId: string): Promise<OnboardingS
         const data = await response.json();
         console.log("[OnboardingUtils] 📊 Backend response:", data);
         
-        const { completeness } = data;
+        const { completeness } = data; // Die *aktuelle* Vollständigkeit vom Backend
         
-        // SEHR niedriger Threshold für neue User
-        const isCompleted = completeness >= 20;
-        const needsWelcome = !isCompleted;
+        const isBackendCompleted = completeness >= 20; // Dein Threshold
         
-        console.log("[OnboardingUtils] 🎯 Completeness:", completeness, "% | Needs welcome:", needsWelcome);
+        console.log("[OnboardingUtils] 🎯 Backend Completeness:", completeness, "% | Threshold Met:", isBackendCompleted);
         
-        // Bei Vollständigkeit lokal markieren
-        if (isCompleted) {
+        // Wenn Backend sagt "abgeschlossen" und es lokal noch nicht so markiert war, markiere es jetzt.
+        if (isBackendCompleted && !hasBeenLocallyMarkedCompleted) {
           await markOnboardingCompleted(userId);
         }
         
         return {
-          isCompleted,
-          needsWelcome,
-          profileCompleteness: completeness,
-          debugInfo: `Backend completeness: ${completeness}%, threshold: 20%`
+          isCompleted: isBackendCompleted, // Basierend auf *aktuellen* Backend-Daten
+          needsWelcome: !hasBeenLocallyMarkedCompleted, // Zeige Welcome nur, wenn der Flow nie zuvor abgeschlossen wurde
+          profileCompleteness: completeness,         // Die *tatsächliche* Backend-Vollständigkeit
+          debugInfo: `Backend completeness: ${completeness}%, threshold: 20%. Locally ever marked: ${hasBeenLocallyMarkedCompleted}`
         };
       } else {
-        console.log("[OnboardingUtils] ❌ Backend request failed - showing welcome");
+        console.log("[OnboardingUtils] ❌ Backend request failed - using local flag for needsWelcome");
         return {
-          isCompleted: false,
-          needsWelcome: true,
+          isCompleted: false, // Fehler beim Backend-Check
+          needsWelcome: !hasBeenLocallyMarkedCompleted,
           profileCompleteness: 0,
-          debugInfo: `Backend error: ${response.status}`
+          debugInfo: `Backend error: ${response.status}, local completion for needsWelcome`
         };
       }
     } catch (fetchError: unknown) {
@@ -94,9 +81,9 @@ export const checkOnboardingStatus = async (userId: string): Promise<OnboardingS
       console.error("[OnboardingUtils] 🚨 Fetch error:", fetchError);
       return {
         isCompleted: false,
-        needsWelcome: true,
+        needsWelcome: !hasBeenLocallyMarkedCompleted,
         profileCompleteness: 0,
-        debugInfo: `Fetch error: ${errorMessage}`
+        debugInfo: `Fetch error: ${errorMessage}, local completion for needsWelcome`
       };
     }
   } catch (error: unknown) {
@@ -104,7 +91,7 @@ export const checkOnboardingStatus = async (userId: string): Promise<OnboardingS
     console.error("[OnboardingUtils] 💥 General error:", error);
     return {
       isCompleted: false,
-      needsWelcome: true,
+      needsWelcome: true, // Im Zweifel Welcome anzeigen
       profileCompleteness: 0,
       debugInfo: `General error: ${errorMessage}`
     };

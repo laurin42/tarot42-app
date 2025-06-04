@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -10,326 +10,249 @@ import {
   Platform,
   KeyboardAvoidingView,
 } from "react-native";
+import * as SecureStore from "expo-secure-store";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import * as SecureStore from "expo-secure-store";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { styles } from "../../styles/detailsScreen";
 
-// Konstanten für API
-const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL || "http://192.168.178.67:3000";
-const SECURE_STORE_BEARER_TOKEN_KEY = "tarot42.bearerAuthToken";
+import {
+  GENDER_OPTIONS,
+  AGE_RANGES,
+  FOCUS_AREAS,
+  API_BASE_URL,
+  SECURE_STORE_BEARER_TOKEN_KEY,
+} from "../../constants/profileConstants";
 
-// Lokaler Storage Key für Form-Daten
-const FORM_CACHE_KEY = "profile_form_cache";
+import { useProfileFormCache } from "../../hooks/useProfileFormCache";
+import { useSession } from "../../providers/SessionProvider";
+import { useBirthdayPicker } from "../../hooks/useBirthdayPicker";
+import { validateForm } from "../../utils/formValidation";
+import type { FormData } from "../../types/profileForm";
+import type { FormCache } from "../../types/profileForm";
 
-const GENDER_OPTIONS = [
-  { key: "male", label: "Männlich", icon: "male" },
-  { key: "female", label: "Weiblich", icon: "female" },
-  { key: "diverse", label: "Divers", icon: "transgender" },
-  { key: "prefer_not_to_say", label: "Keine Angabe", icon: "help-circle" },
-];
-
-const AGE_RANGES = [
-  { key: "18-25", label: "18-25 Jahre" },
-  { key: "26-35", label: "26-35 Jahre" },
-  { key: "36-45", label: "36-45 Jahre" },
-  { key: "46-55", label: "46-55 Jahre" },
-  { key: "56-65", label: "56-65 Jahre" },
-  { key: "65+", label: "65+ Jahre" },
-];
-
-const FOCUS_AREAS = [
-  {
-    key: "financial_career",
-    label: "Finanzielle/berufliche Deutung",
-    icon: "trending-up",
-    description: "Karriere, Geld, Erfolg",
-  },
-  {
-    key: "love_relationships",
-    label: "Liebesleben",
-    icon: "heart",
-    description: "Beziehungen, Romantik, Partnerschaft",
-  },
-  {
-    key: "personal_development",
-    label: "Persönliche Entwicklung",
-    icon: "person",
-    description: "Selbstfindung, Spiritualität, Wachstum",
-  },
-];
-
-interface FormCache {
-  personalGoal: string;
-  additionalDetails: string;
-  selectedGender: string;
-  selectedAgeRange: string;
-  selectedFocusArea: string;
-  manualDateInput: string;
-  manualTimeInput: string;
-  includeTime: boolean;
-  lastUpdated: number;
-}
-
-export default function DetailsScreen() {
+export default function goalsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{
     zodiacSign?: string;
     element?: string;
   }>();
 
-  // State
+  const sessionContext = useSession();
+  const userId = sessionContext?.session?.user?.id;
+
   const [personalGoal, setPersonalGoal] = useState("");
   const [additionalDetails, setAdditionalDetails] = useState("");
   const [selectedGender, setSelectedGender] = useState<string>("");
   const [selectedAgeRange, setSelectedAgeRange] = useState<string>("");
   const [selectedFocusArea, setSelectedFocusArea] = useState<string>("");
-
-  // Geburtstag & Zeit
-  const [birthDate, setBirthDate] = useState<Date>(new Date(1990, 0, 1));
-  const [birthTime, setBirthTime] = useState<Date>(new Date(2000, 0, 1, 0, 0));
-  const [manualDateInput, setManualDateInput] = useState("01.01.1990");
-  const [manualTimeInput, setManualTimeInput] = useState("00:00");
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState(false);
-  const [useManualInput, setUseManualInput] = useState(false);
-  const [includeTime, setIncludeTime] = useState(false);
-
+  const birthdayPicker = useBirthdayPicker();
   const [isLoading, setIsLoading] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  // Cache-Management
-  const saveFormCache = async () => {
-    try {
-      const cacheData: FormCache = {
-        personalGoal,
-        additionalDetails,
-        selectedGender,
-        selectedAgeRange,
-        selectedFocusArea,
-        manualDateInput,
-        manualTimeInput,
-        includeTime,
-        lastUpdated: Date.now(),
-      };
-      await SecureStore.setItemAsync(FORM_CACHE_KEY, JSON.stringify(cacheData));
-      console.log("[DetailsScreen] Form cache saved");
-    } catch (error) {
-      console.log("[DetailsScreen] Failed to save form cache:", error);
+  const { saveFormCache, loadFormCache, clearFormCache } = useProfileFormCache(
+    userId || ""
+  );
+
+  const loadExistingProfile = useCallback(async () => {
+    if (!userId) {
+      console.log("[goalsScreen] No userId, cannot load existing profile.");
+      return;
     }
-  };
-
-  const loadFormCache = async () => {
-    try {
-      const cachedData = await SecureStore.getItemAsync(FORM_CACHE_KEY);
-      if (cachedData) {
-        const cache: FormCache = JSON.parse(cachedData);
-
-        // Nur laden wenn Cache weniger als 24h alt ist
-        const isRecent = Date.now() - cache.lastUpdated < 24 * 60 * 60 * 1000;
-
-        if (isRecent) {
-          setPersonalGoal(cache.personalGoal || "");
-          setAdditionalDetails(cache.additionalDetails || "");
-          setSelectedGender(cache.selectedGender || "");
-          setSelectedAgeRange(cache.selectedAgeRange || "");
-          setSelectedFocusArea(cache.selectedFocusArea || "");
-          setManualDateInput(cache.manualDateInput || "01.01.1990");
-          setManualTimeInput(cache.manualTimeInput || "00:00");
-          setIncludeTime(cache.includeTime || false);
-
-          console.log("[DetailsScreen] Form cache loaded");
-          return true;
-        }
-      }
-    } catch (error) {
-      console.log("[DetailsScreen] Failed to load form cache:", error);
-    }
-    return false;
-  };
-
-  const clearFormCache = async () => {
-    try {
-      await SecureStore.deleteItemAsync(FORM_CACHE_KEY);
-      console.log("[DetailsScreen] Form cache cleared");
-    } catch (error) {
-      console.log("[DetailsScreen] Failed to clear form cache:", error);
-    }
-  };
-
-  const loadExistingProfile = async () => {
+    setIsLoading(true);
     try {
       const token = await SecureStore.getItemAsync(
         SECURE_STORE_BEARER_TOKEN_KEY
       );
-      if (!token) return;
-
+      if (!token) {
+        Alert.alert("Fehler", "Authentifizierungstoken nicht gefunden.");
+        setIsLoading(false);
+        return;
+      }
       const response = await fetch(`${API_BASE_URL}/api/profile`, {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
+      if (!response.ok) {
+        if (response.status === 404) {
+          console.log("[goalsScreen] No existing profile found (404).");
+          return;
+        }
+        throw new Error("Fehler beim Laden des Profils.");
+      }
+      const profileData = await response.json();
+      if (profileData) {
+        setPersonalGoal(profileData.personalGoals || "");
+        setAdditionalDetails(profileData.additionalDetails || "");
+        setSelectedFocusArea(profileData.focusArea || "");
+        setSelectedGender(profileData.gender || "");
+        setSelectedAgeRange(profileData.ageRange || "");
 
-      if (response.ok) {
-        const profile = await response.json();
+        if (profileData.birthDateTime) {
+          const dateTimeString = profileData.birthDateTime.toString();
+          let dateInput = "";
+          let timeInput = "";
 
-        // Nur setzen wenn noch keine Cache-Daten geladen wurden
-        if (!personalGoal && profile.personalGoals) {
-          setPersonalGoal(profile.personalGoals);
-        }
-        if (!additionalDetails && profile.additionalDetails) {
-          setAdditionalDetails(profile.additionalDetails);
-        }
-        if (!selectedFocusArea && profile.focusArea) {
-          setSelectedFocusArea(profile.focusArea);
-        }
-        if (!selectedGender && profile.gender) {
-          setSelectedGender(profile.gender);
-        }
-        if (!selectedAgeRange && profile.ageRange) {
-          setSelectedAgeRange(profile.ageRange);
-        }
-        if (profile.birthDateTime && !manualDateInput) {
-          // Parse existierendes Datum
-          const datePart = profile.birthDateTime.split(" um ")[0];
-          if (datePart !== "01.01.1990") {
-            setManualDateInput(datePart);
+          if (profileData.includeTime) {
+            const parts = dateTimeString.split(" ");
+            dateInput = parts[0] || "";
+            timeInput = parts.length > 1 ? parts.slice(1).join(" ") : "";
+            birthdayPicker.handleManualTimeInput(timeInput);
+          } else {
+            dateInput = dateTimeString;
+            birthdayPicker.handleManualTimeInput("");
           }
+          birthdayPicker.handleManualDateInput(dateInput);
+          birthdayPicker.setIncludeTime(!!profileData.includeTime);
+        } else {
+          birthdayPicker.handleManualDateInput("");
+          birthdayPicker.handleManualTimeInput("");
+          birthdayPicker.setIncludeTime(false);
         }
-
-        console.log("[DetailsScreen] Existing profile loaded");
       }
     } catch (error) {
-      console.log("[DetailsScreen] Failed to load existing profile:", error);
+      console.error("[goalsScreen] Failed to load existing profile:", error);
+      Alert.alert("Fehler", "Profil konnte nicht geladen werden.");
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [
+    userId,
+    birthdayPicker.handleManualDateInput,
+    birthdayPicker.handleManualTimeInput,
+    birthdayPicker.setIncludeTime,
+  ]);
 
   useEffect(() => {
     const initializeForm = async () => {
-      console.log("[DetailsScreen] Received params:", params);
-
-      // 1. Versuche Cache zu laden
-      const cacheLoaded = await loadFormCache();
-
-      // 2. Falls kein Cache, lade existierendes Profil
-      if (!cacheLoaded) {
-        await loadExistingProfile();
+      console.log("[goalsScreen] Received params:", params);
+      if (!userId) {
+        console.log("[goalsScreen] Waiting for userId to initialize form.");
+        setIsLoading(false);
+        return;
       }
+      setIsLoading(true);
+      const cachedValues = await loadFormCache();
+
+      if (cachedValues) {
+        setPersonalGoal(cachedValues.personalGoal || "");
+        setAdditionalDetails(cachedValues.additionalDetails || "");
+        setSelectedGender(cachedValues.selectedGender || "");
+        setSelectedAgeRange(cachedValues.selectedAgeRange || "");
+        setSelectedFocusArea(cachedValues.selectedFocusArea || "");
+
+        if (cachedValues.manualDateInput !== undefined) {
+          birthdayPicker.handleManualDateInput(
+            cachedValues.manualDateInput || ""
+          );
+        } else {
+          birthdayPicker.handleManualDateInput(""); // Fallback
+        }
+        if (cachedValues.manualTimeInput !== undefined) {
+          birthdayPicker.handleManualTimeInput(
+            cachedValues.manualTimeInput || ""
+          );
+        } else {
+          birthdayPicker.handleManualTimeInput(""); // Fallback
+        }
+        if (cachedValues.includeTime !== undefined) {
+          birthdayPicker.setIncludeTime(!!cachedValues.includeTime);
+        } else {
+          birthdayPicker.setIncludeTime(false); // Fallback
+        }
+        console.log("[goalsScreen] Form initialized from cache.");
+        setHasUnsavedChanges(false);
+      } else {
+        await loadExistingProfile();
+        console.log("[goalsScreen] No cache, tried loading existing profile.");
+      }
+      setIsLoading(false);
     };
-
     initializeForm();
-  }, [params]);
+  }, [
+    userId,
+    params,
+    loadFormCache,
+    loadExistingProfile,
+    birthdayPicker.handleManualDateInput,
+    birthdayPicker.handleManualTimeInput,
+    birthdayPicker.setIncludeTime,
+  ]);
 
-  // Auto-save bei Änderungen (debounced)
   useEffect(() => {
-    setHasUnsavedChanges(true);
-
-    const timer = setTimeout(() => {
-      saveFormCache();
-    }, 2000); // Speichere nach 2 Sekunden Inaktivität
-
-    return () => clearTimeout(timer);
+    if (isLoading) {
+      return;
+    }
+    const timeoutId = setTimeout(() => {
+      setHasUnsavedChanges(true);
+    }, 0);
+    return () => clearTimeout(timeoutId);
   }, [
     personalGoal,
     additionalDetails,
     selectedGender,
     selectedAgeRange,
     selectedFocusArea,
-    manualDateInput,
-    manualTimeInput,
-    includeTime,
+    birthdayPicker.birthdayData.manualDateInput,
+    birthdayPicker.birthdayData.manualTimeInput,
+    birthdayPicker.birthdayData.includeTime,
+    isLoading,
   ]);
 
-  const formatDateForDisplay = (date: Date): string => {
-    return date.toLocaleDateString("de-DE", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  };
-
-  const formatTimeForDisplay = (date: Date): string => {
-    return date.toLocaleTimeString("de-DE", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const handleDateChange = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(false);
-    if (selectedDate) {
-      setBirthDate(selectedDate);
-      setManualDateInput(formatDateForDisplay(selectedDate));
+  useEffect(() => {
+    if (!hasUnsavedChanges || !userId) {
+      if (!userId) setHasUnsavedChanges(false);
+      return;
     }
-  };
-
-  const handleTimeChange = (event: any, selectedTime?: Date) => {
-    setShowTimePicker(false);
-    if (selectedTime) {
-      setBirthTime(selectedTime);
-      setManualTimeInput(formatTimeForDisplay(selectedTime));
-    }
-  };
-
-  const handleManualDateInput = (text: string) => {
-    setManualDateInput(text);
-    const datePattern = /^(\d{2})\.(\d{2})\.(\d{4})$/;
-    const match = text.match(datePattern);
-    if (match) {
-      const [, day, month, year] = match;
-      const parsedDate = new Date(
-        parseInt(year),
-        parseInt(month) - 1,
-        parseInt(day)
-      );
-      if (!isNaN(parsedDate.getTime())) {
-        setBirthDate(parsedDate);
-      }
-    }
-  };
-
-  const handleManualTimeInput = (text: string) => {
-    setManualTimeInput(text);
-    const timePattern = /^(\d{2}):(\d{2})$/;
-    const match = text.match(timePattern);
-    if (match) {
-      const [, hours, minutes] = match;
-      const newTime = new Date(2000, 0, 1, parseInt(hours), parseInt(minutes));
-      if (
-        !isNaN(newTime.getTime()) &&
-        parseInt(hours) < 24 &&
-        parseInt(minutes) < 60
-      ) {
-        setBirthTime(newTime);
-      }
-    }
-  };
-
-  const getBirthDateTimeString = (): string => {
-    if (!manualDateInput && !formatDateForDisplay(birthDate)) return "";
-
-    const dateStr = manualDateInput || formatDateForDisplay(birthDate);
-    if (includeTime) {
-      const timeStr = manualTimeInput || formatTimeForDisplay(birthTime);
-      return `${dateStr} um ${timeStr}`;
-    }
-    return dateStr;
-  };
-
-  // In der handleSaveCompleteProfile Funktion der goals.tsx
-  // Füge diesen Code nach dem erfolgreichen Speichern hinzu:
+    const timer = setTimeout(() => {
+      const dataToCache: Omit<FormCache, "lastUpdated"> = {
+        userId: userId,
+        personalGoal,
+        additionalDetails,
+        selectedGender,
+        selectedAgeRange,
+        selectedFocusArea,
+        manualDateInput: birthdayPicker.birthdayData.manualDateInput,
+        manualTimeInput: birthdayPicker.birthdayData.manualTimeInput,
+        includeTime: birthdayPicker.birthdayData.includeTime,
+      };
+      saveFormCache(dataToCache);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [
+    userId,
+    personalGoal,
+    additionalDetails,
+    selectedGender,
+    selectedAgeRange,
+    selectedFocusArea,
+    birthdayPicker.birthdayData.manualDateInput,
+    birthdayPicker.birthdayData.manualTimeInput,
+    birthdayPicker.birthdayData.includeTime,
+    saveFormCache,
+    hasUnsavedChanges,
+  ]);
 
   const handleSaveCompleteProfile = async () => {
-    if (!personalGoal.trim()) {
-      Alert.alert("Fehler", "Bitte gib mindestens ein persönliches Ziel ein.");
+    const formData: FormData = {
+      personalGoal: personalGoal.trim(),
+      additionalDetails: additionalDetails.trim(),
+      selectedGender,
+      selectedAgeRange,
+      selectedFocusArea,
+      manualDateInput: birthdayPicker.birthdayData.manualDateInput,
+      manualTimeInput: birthdayPicker.birthdayData.manualTimeInput,
+      includeTime: birthdayPicker.birthdayData.includeTime,
+    };
+
+    const validation = validateForm(formData);
+
+    if (!validation.isValid) {
+      Alert.alert("Fehler", validation.errors.join("\n"));
       return;
     }
 
     setIsLoading(true);
-
     try {
       const token = await SecureStore.getItemAsync(
         SECURE_STORE_BEARER_TOKEN_KEY
@@ -337,6 +260,7 @@ export default function DetailsScreen() {
 
       if (!token) {
         Alert.alert("Fehler", "Keine gültige Authentifizierung gefunden.");
+        setIsLoading(false); // isLoading zurücksetzen
         return;
       }
 
@@ -348,11 +272,11 @@ export default function DetailsScreen() {
         focusArea: selectedFocusArea,
         gender: selectedGender,
         ageRange: selectedAgeRange,
-        birthDateTime: getBirthDateTimeString(),
-        includeTime: includeTime,
+        birthDateTime: birthdayPicker.getBirthDateTimeString(),
+        includeTime: birthdayPicker.birthdayData.includeTime,
       };
 
-      console.log("[DetailsScreen] Saving profile data:", profileData);
+      console.log("[goalsScreen] Saving profile data:", profileData); // Angepasst
 
       const response = await fetch(`${API_BASE_URL}/api/profile`, {
         method: "PUT",
@@ -371,24 +295,21 @@ export default function DetailsScreen() {
       }
 
       const result = await response.json();
-      console.log("[DetailsScreen] Profile saved successfully:", result);
+      console.log("[goalsScreen] Profile saved successfully:", result); // Angepasst
 
-      // Cache löschen nach erfolgreichem Speichern
       await clearFormCache();
       setHasUnsavedChanges(false);
 
-      // *** NEU: Onboarding als abgeschlossen markieren ***
       try {
         if ((global as any).markOnboardingCompleted) {
           await (global as any).markOnboardingCompleted();
-          console.log("[DetailsScreen] Onboarding marked as completed");
+          console.log("[goalsScreen] Onboarding marked as completed"); // Angepasst
         }
       } catch (onboardingError) {
         console.warn(
-          "[DetailsScreen] Could not mark onboarding as completed:",
+          "[goalsScreen] Could not mark onboarding as completed:", // Angepasst
           onboardingError
         );
-        // Nicht kritisch, lass es nicht den ganzen Flow stoppen
       }
 
       Alert.alert(
@@ -402,7 +323,7 @@ export default function DetailsScreen() {
         ]
       );
     } catch (error: any) {
-      console.error("[DetailsScreen] Error saving profile:", error);
+      console.error("[goalsScreen] Error saving profile:", error); // Angepasst
       Alert.alert(
         "Fehler beim Speichern",
         error.message || "Ein unerwarteter Fehler ist aufgetreten."
@@ -450,6 +371,7 @@ export default function DetailsScreen() {
     );
   };
 
+  // JSX (wie von dir bereitgestellt)
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -461,7 +383,6 @@ export default function DetailsScreen() {
         contentContainerStyle={styles.contentContainer}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={handleBack} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#8B5CF6" />
@@ -473,28 +394,22 @@ export default function DetailsScreen() {
             </View>
           )}
         </View>
-
-        {/* Progress */}
         <View style={styles.progressContainer}>
           <View style={styles.progressBar}>
             <View style={[styles.progressFill, { width: "100%" }]} />
           </View>
           <Text style={styles.progressText}>Schritt 3 von 3</Text>
         </View>
-
         <View style={styles.formContainer}>
           <Text style={styles.introText}>
             Letzter Schritt! Teile uns deine persönlichen Ziele mit und ergänze
             optional weitere Details für noch personalisiertere Readings.
           </Text>
-
-          {/* Persönliche Ziele - PFLICHTFELD */}
           <Text style={styles.sectionTitle}>Was ist dein Hauptziel? *</Text>
           <Text style={styles.sectionDescription}>
             Beschreibe, was du in deinem Leben erreichen möchtest. Dies hilft
             uns, personalisierte Tarot-Readings für dich zu erstellen.
           </Text>
-
           <TextInput
             style={styles.textInput}
             placeholder="z.B. Mehr Selbstvertrauen, bessere Beziehungen, beruflicher Erfolg..."
@@ -506,8 +421,6 @@ export default function DetailsScreen() {
             editable={!isLoading}
           />
           <Text style={styles.characterCount}>{personalGoal.length}/500</Text>
-
-          {/* Zusätzliche Details */}
           <Text style={styles.sectionTitle}>
             Zusätzliche Details über dich (Optional)
           </Text>
@@ -515,7 +428,6 @@ export default function DetailsScreen() {
             Möchtest du uns noch etwas anderes über dich mitteilen? Alles was
             dir wichtig erscheint.
           </Text>
-
           <TextInput
             style={[styles.textInput, styles.largeTextInput]}
             placeholder="Weitere Details über deine Persönlichkeit, Interessen oder Lebenssituation..."
@@ -529,8 +441,6 @@ export default function DetailsScreen() {
           <Text style={styles.characterCount}>
             {additionalDetails.length}/1000
           </Text>
-
-          {/* Fokusbereich */}
           <Text style={styles.sectionTitle}>Interessiert an (Optional)</Text>
           <Text style={styles.sectionDescription}>
             Wähle einen Bereich, auf den sich deine Tarot-Readings hauptsächlich
@@ -576,8 +486,6 @@ export default function DetailsScreen() {
               </TouchableOpacity>
             ))}
           </View>
-
-          {/* Geschlecht */}
           <Text style={styles.sectionTitle}>Geschlecht (Optional)</Text>
           <View style={styles.optionsContainer}>
             {GENDER_OPTIONS.map((option) => (
@@ -605,8 +513,6 @@ export default function DetailsScreen() {
               </TouchableOpacity>
             ))}
           </View>
-
-          {/* Altersbereich */}
           <Text style={styles.sectionTitle}>Altersbereich (Optional)</Text>
           <View style={styles.optionsContainer}>
             {AGE_RANGES.map((range) => (
@@ -629,33 +535,35 @@ export default function DetailsScreen() {
               </TouchableOpacity>
             ))}
           </View>
-
-          {/* Geburtstag & Zeit (Optional) */}
           <Text style={styles.sectionTitle}>Geburtstag & Zeit (Optional)</Text>
           <Text style={styles.sectionDescription}>
             Für noch präzisere astrologische Readings. Die Geburtszeit ist
             optional, aber hilfreich für ein Geburtshoroskop.
           </Text>
-
           <View style={styles.birthdayContainer}>
-            {/* Input Mode Toggle */}
             <View style={styles.inputModeContainer}>
               <TouchableOpacity
                 style={[
                   styles.inputModeButton,
-                  !useManualInput && styles.activeInputMode,
+                  !birthdayPicker.birthdayData.useManualInput &&
+                    styles.activeInputMode,
                 ]}
-                onPress={() => setUseManualInput(false)}
+                onPress={() => birthdayPicker.setUseManualInput(false)}
               >
                 <Ionicons
                   name="calendar"
                   size={16}
-                  color={!useManualInput ? "#FFFFFF" : "#6B7280"}
+                  color={
+                    !birthdayPicker.birthdayData.useManualInput
+                      ? "#FFFFFF"
+                      : "#6B7280"
+                  }
                 />
                 <Text
                   style={[
                     styles.inputModeText,
-                    !useManualInput && styles.activeInputModeText,
+                    !birthdayPicker.birthdayData.useManualInput &&
+                      styles.activeInputModeText,
                   ]}
                 >
                   Kalender
@@ -664,34 +572,38 @@ export default function DetailsScreen() {
               <TouchableOpacity
                 style={[
                   styles.inputModeButton,
-                  useManualInput && styles.activeInputMode,
+                  birthdayPicker.birthdayData.useManualInput &&
+                    styles.activeInputMode,
                 ]}
-                onPress={() => setUseManualInput(true)}
+                onPress={() => birthdayPicker.setUseManualInput(true)}
               >
                 <Ionicons
                   name="create"
                   size={16}
-                  color={useManualInput ? "#FFFFFF" : "#6B7280"}
+                  color={
+                    birthdayPicker.birthdayData.useManualInput
+                      ? "#FFFFFF"
+                      : "#6B7280"
+                  }
                 />
                 <Text
                   style={[
                     styles.inputModeText,
-                    useManualInput && styles.activeInputModeText,
+                    birthdayPicker.birthdayData.useManualInput &&
+                      styles.activeInputModeText,
                   ]}
                 >
                   Manuell
                 </Text>
               </TouchableOpacity>
             </View>
-
-            {/* Date Input */}
             <Text style={styles.inputLabel}>Geburtsdatum:</Text>
-            {useManualInput ? (
+            {birthdayPicker.birthdayData.useManualInput ? (
               <TextInput
                 style={styles.textInput}
                 placeholder="TT.MM.JJJJ (z.B. 15.03.1990)"
-                value={manualDateInput}
-                onChangeText={handleManualDateInput}
+                value={birthdayPicker.birthdayData.manualDateInput}
+                onChangeText={birthdayPicker.handleManualDateInput}
                 keyboardType="numeric"
                 maxLength={10}
                 editable={!isLoading}
@@ -699,25 +611,33 @@ export default function DetailsScreen() {
             ) : (
               <TouchableOpacity
                 style={styles.datePickerButton}
-                onPress={() => setShowDatePicker(true)}
+                onPress={() => birthdayPicker.setShowDatePicker(true)}
               >
                 <Ionicons name="calendar-outline" size={20} color="#6B7280" />
                 <Text style={styles.datePickerText}>
-                  {manualDateInput || formatDateForDisplay(birthDate)}
+                  {birthdayPicker.formatDateForDisplay(
+                    birthdayPicker.birthdayData.birthDate
+                  )}
                 </Text>
               </TouchableOpacity>
             )}
-
-            {/* Time Toggle */}
             <View style={styles.timeToggleContainer}>
               <TouchableOpacity
                 style={styles.timeToggle}
-                onPress={() => setIncludeTime(!includeTime)}
+                onPress={() =>
+                  birthdayPicker.setIncludeTime(
+                    !birthdayPicker.birthdayData.includeTime
+                  )
+                }
               >
                 <View
-                  style={[styles.checkbox, includeTime && styles.checkedBox]}
+                  style={[
+                    styles.checkbox,
+                    birthdayPicker.birthdayData.includeTime &&
+                      styles.checkedBox,
+                  ]}
                 >
-                  {includeTime && (
+                  {birthdayPicker.birthdayData.includeTime && (
                     <Ionicons name="checkmark" size={16} color="#FFFFFF" />
                   )}
                 </View>
@@ -726,17 +646,15 @@ export default function DetailsScreen() {
                 </Text>
               </TouchableOpacity>
             </View>
-
-            {/* Time Input (only if enabled) */}
-            {includeTime && (
+            {birthdayPicker.birthdayData.includeTime && (
               <>
                 <Text style={styles.inputLabel}>Geburtszeit:</Text>
-                {useManualInput ? (
+                {birthdayPicker.birthdayData.useManualInput ? (
                   <TextInput
                     style={styles.textInput}
                     placeholder="HH:MM (z.B. 14:30)"
-                    value={manualTimeInput}
-                    onChangeText={handleManualTimeInput}
+                    value={birthdayPicker.birthdayData.manualTimeInput}
+                    onChangeText={birthdayPicker.handleManualTimeInput}
                     keyboardType="numeric"
                     maxLength={5}
                     editable={!isLoading}
@@ -744,53 +662,48 @@ export default function DetailsScreen() {
                 ) : (
                   <TouchableOpacity
                     style={styles.datePickerButton}
-                    onPress={() => setShowTimePicker(true)}
+                    onPress={() => birthdayPicker.setShowTimePicker(true)}
                   >
                     <Ionicons name="time-outline" size={20} color="#6B7280" />
                     <Text style={styles.datePickerText}>
-                      {manualTimeInput || formatTimeForDisplay(birthTime)}
+                      {birthdayPicker.formatTimeForDisplay(
+                        birthdayPicker.birthdayData.birthTime
+                      )}
                     </Text>
                   </TouchableOpacity>
                 )}
               </>
             )}
-
-            {/* Summary */}
-            {(manualDateInput || formatDateForDisplay(birthDate)) && (
+            {birthdayPicker.getBirthDateTimeString() && (
               <View style={styles.birthdaySummary}>
                 <Text style={styles.birthdaySummaryText}>
-                  Ausgewählt: {getBirthDateTimeString()}
+                  Ausgewählt: {birthdayPicker.getBirthDateTimeString()}
                 </Text>
               </View>
             )}
           </View>
-
-          {/* Date/Time Pickers */}
-          {showDatePicker && (
+          {birthdayPicker.birthdayData.showDatePicker && (
             <DateTimePicker
               testID="dateTimePicker"
-              value={birthDate}
+              value={birthdayPicker.birthdayData.birthDate}
               mode="date"
               is24Hour={true}
               display="default"
-              onChange={handleDateChange}
+              onChange={birthdayPicker.handleDateChange}
               maximumDate={new Date()}
             />
           )}
-
-          {showTimePicker && (
+          {birthdayPicker.birthdayData.showTimePicker && (
             <DateTimePicker
               testID="timePicker"
-              value={birthTime}
+              value={birthdayPicker.birthdayData.birthTime}
               mode="time"
               is24Hour={true}
               display="default"
-              onChange={handleTimeChange}
+              onChange={birthdayPicker.handleTimeChange}
             />
           )}
         </View>
-
-        {/* Buttons */}
         <View style={styles.buttonContainer}>
           <TouchableOpacity
             style={[
@@ -811,7 +724,6 @@ export default function DetailsScreen() {
               </>
             )}
           </TouchableOpacity>
-
           <TouchableOpacity
             style={styles.skipButton}
             onPress={handleSkip}
