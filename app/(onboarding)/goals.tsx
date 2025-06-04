@@ -380,7 +380,7 @@ export default function DetailsScreen() {
         [
           {
             text: "Weiter",
-            onPress: () => router.replace("/(tabs)/settings"),
+            onPress: () => router.replace("/(tabs)/profile"),
           },
         ]
       );
@@ -426,7 +426,7 @@ export default function DetailsScreen() {
           text: "Trotzdem überspringen",
           onPress: () => {
             clearFormCache();
-            router.replace("/(tabs)/settings");
+            router.replace("/(tabs)/profile");
           },
         },
       ]

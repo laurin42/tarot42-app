@@ -53,7 +53,7 @@ export default function RootLayout() {
     }
 
     const inAuthGroup = segments[0] === "(auth)";
-    const currentRoute = segments.join("/") || "/"; // Default to '/' if segments is empty
+    const currentRoute = segments.join("/") || "/";
 
     if (session && !error) {
       // User is signed in
@@ -62,15 +62,15 @@ export default function RootLayout() {
       );
       if (inAuthGroup) {
         console.log(
-          "[RootLayout] User signed in, but in (auth) group. Redirecting to /(tabs)/settings."
+          "[RootLayout] User signed in, but in (auth) group. Redirecting to /(tabs)/profile."
         );
-        router.replace("/(tabs)/settings");
+        router.replace("/(tabs)/profile");
       } else if (segments.length === 0 || currentRoute === "(tabs)") {
         // If at the very root, or if the route is just "(tabs)" (which can happen initially)
         console.log(
-          `[RootLayout] User signed in, at app root or just (tabs). Redirecting to /(tabs)/settings. Current route: ${currentRoute}`
+          `[RootLayout] User signed in, at app root or just (tabs). Redirecting to /(tabs)/profile. Current route: ${currentRoute}`
         );
-        router.replace("/(tabs)/settings");
+        router.replace("/(tabs)/profile");
       } else {
         console.log(
           `[RootLayout] User signed in, NOT in (auth) group and not at root/generic (tabs). Allowing navigation. Current route: ${currentRoute}`
@@ -95,8 +95,6 @@ export default function RootLayout() {
   }, [session, isPending, error, segments, router, fontsLoaded, fontError]);
 
   if (!fontsLoaded && !fontError) {
-    // This can be a very brief state or if fonts are genuinely not loading.
-    // You might want to return a loading indicator here if it becomes noticeable.
     return null;
   }
 
@@ -104,8 +102,7 @@ export default function RootLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="(auth)" />
-      <Stack.Screen name="(ich)" /> {/* Ensure (ich) group is registered */}
-      {/* Add other top-level groups if any, e.g., <Stack.Screen name="modal" /> */}
+      <Stack.Screen name="(onboarding)" />{" "}
     </Stack>
   );
 }

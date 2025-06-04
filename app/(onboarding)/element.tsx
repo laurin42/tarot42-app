@@ -111,11 +111,11 @@ export default function ElementScreen() {
       await saveElementToBackend(selectedElement);
 
       console.log(
-        `[ElementScreen] Element gespeichert. Navigating to details screen with zodiac: ${zodiacSign}, element: ${selectedElement}`
+        `[ElementScreen] Element gespeichert. Navigating to goals screen with zodiac: ${zodiacSign}, element: ${selectedElement}`
       );
 
       router.push({
-        pathname: "/(ich)/details",
+        pathname: "(onboarding)/goals",
         params: { zodiacSign, selectedElement },
       } as any);
     } catch (error: any) {
@@ -132,10 +132,10 @@ export default function ElementScreen() {
 
   const handleSkip = () => {
     console.log(
-      `[ElementScreen] Skip pressed. Navigating to details screen, with zodiac: ${zodiacSign}`
+      `[ElementScreen] Skip pressed. Navigating to goals screen, with zodiac: ${zodiacSign}`
     );
     router.push({
-      pathname: "/(ich)/details",
+      pathname: "(onboarding)/goals",
       params: { zodiacSign },
     } as any);
   };

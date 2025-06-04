@@ -20,10 +20,10 @@ import { ProfileCard } from "../../components/ProfileCard";
 import { ProfileInfoRow } from "../../components/ProfileInfoRow";
 import { EmptyText } from "../../components/EmptyText";
 
-import { styles } from "../../styles/settingsScreen";
+import { styles } from "../../styles/profileScreen";
 import { Ionicons } from "@expo/vector-icons";
 
-export default function IchScreen() {
+export default function ProfileScreen() {
   const router = useRouter();
 
   const {
@@ -194,8 +194,8 @@ export default function IchScreen() {
         <TouchableOpacity
           style={styles.primaryButton}
           onPress={() => {
-            console.log("[settings.tsx] Navigating to profile editing");
-            router.push({ pathname: "/(ich)/zodiacSign" } as any);
+            console.log("[profile.tsx] Navigating to profile editing");
+            router.push({ pathname: "/(onboarding)/zodiacSign" } as any);
           }}
         >
           <Ionicons name="create" size={20} color="#FFFFFF" />

@@ -139,14 +139,17 @@ export default function ZodiacSignScreen() {
     );
     // Typed navigation params
     router.push({
-      pathname: "/(ich)/element",
+      pathname: "/(onboarding)/element",
       params: { zodiacSign: selectedSignObject?.name || "" }, // Ensure param is always a string
     });
   };
 
   const handleSkip = () => {
     // Typed navigation params
-    router.push({ pathname: "/(ich)/element", params: { zodiacSign: "" } });
+    router.push({
+      pathname: "/(onboarding)/element",
+      params: { zodiacSign: "" },
+    });
   };
 
   if (isSessionStillLoading || !fontsLoaded) {

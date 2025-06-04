@@ -40,10 +40,9 @@ export default function TabHomeScreen() {
     if (sessionData) {
       setUser(sessionData.user);
     } else if (!isSessionLoading && !sessionData && !sessionError) {
-      // With Expo Router, redirection based on auth state is typically handled
-      // in a higher-level layout or with a redirect component.
-      // For now, let's assume App.tsx or _layout.tsx will handle this.
-      // router.replace("/sign-in" as Href);
+      // If sessionData is not available and loading is done, redirect to sign-in
+      console.log("No session data found, redirecting to sign-in.");
+      router.replace("/(auth)/sign-in");
     }
   }, [sessionData, isSessionLoading, sessionError, router]);
 

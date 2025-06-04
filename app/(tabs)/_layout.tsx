@@ -6,27 +6,27 @@ export default function TabLayout() {
   return (
     <Tabs screenOptions={{ tabBarActiveTintColor: "blue" }}>
       <Tabs.Screen
-        name="index"
+        name="horoscope"
         options={{
-          title: "Sterne", // Changed from "Home"
+          title: "Horoskop", // Changed from "Home"
           tabBarIcon: ({ color }) => (
             <FontAwesome size={28} name="star" color={color} /> // Changed icon to 'star'
           ),
         }}
       />
       <Tabs.Screen
-        name="settings"
+        name="profile"
         options={{
-          title: "Ich", // Changed from "Settings"
+          title: "Profil",
           tabBarIcon: ({ color }) => (
             <FontAwesome size={28} name="user" color={color} /> // Changed icon to 'user'
           ),
         }}
       />
       <Tabs.Screen
-        name="karten" // This should match the filename karten.tsx
+        name="cards" // This should match the filename karten.tsx
         options={{
-          title: "Karten",
+          title: "Tarot",
           tabBarIcon: ({ color }) => (
             <FontAwesome size={28} name="map" color={color} /> // Example icon, change as needed
           ),

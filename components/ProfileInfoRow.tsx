@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text } from "react-native";
-import { styles } from "../styles/settingsScreen";
+import { styles } from "../styles/profileScreen";
 
 interface ProfileInfoRowProps {
   label: string;
