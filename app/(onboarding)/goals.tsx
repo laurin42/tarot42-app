@@ -319,6 +319,9 @@ export default function DetailsScreen() {
     return dateStr;
   };
 
+  // In der handleSaveCompleteProfile Funktion der goals.tsx
+  // Füge diesen Code nach dem erfolgreichen Speichern hinzu:
+
   const handleSaveCompleteProfile = async () => {
     if (!personalGoal.trim()) {
       Alert.alert("Fehler", "Bitte gib mindestens ein persönliches Ziel ein.");
@@ -373,6 +376,20 @@ export default function DetailsScreen() {
       // Cache löschen nach erfolgreichem Speichern
       await clearFormCache();
       setHasUnsavedChanges(false);
+
+      // *** NEU: Onboarding als abgeschlossen markieren ***
+      try {
+        if ((global as any).markOnboardingCompleted) {
+          await (global as any).markOnboardingCompleted();
+          console.log("[DetailsScreen] Onboarding marked as completed");
+        }
+      } catch (onboardingError) {
+        console.warn(
+          "[DetailsScreen] Could not mark onboarding as completed:",
+          onboardingError
+        );
+        // Nicht kritisch, lass es nicht den ganzen Flow stoppen
+      }
 
       Alert.alert(
         "Profil vervollständigt! 🎉",
