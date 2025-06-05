@@ -9,16 +9,16 @@ import {
 import React from "react";
 import { useRouter } from "expo-router";
 
-import { useUserProfile } from "../../hooks/useUserProfile";
-import { useProfileActions } from "../../hooks/useProfileActions";
+import { useUserProfile } from "../../hooks/profile/useUserProfile";
+import { useProfileActions } from "../../hooks/profile/useProfileActions";
 import { getProfileCompleteness } from "../../utils/profileUtils";
 import {
   getFocusAreaLabel,
   getGenderLabel,
 } from "../../constants/profileConstants";
-import { ProfileCard } from "../../components/ProfileCard";
-import { ProfileInfoRow } from "../../components/ProfileInfoRow";
-import { EmptyText } from "../../components/EmptyText";
+import { ProfileCard } from "../../components/profile/ProfileCard";
+import { ProfileInfoRow } from "../../components/profile/ProfileInfoRow";
+import { EmptyText } from "../../components/ui/EmptyText";
 
 import { styles } from "../../styles/profileScreen";
 import { Ionicons } from "@expo/vector-icons";

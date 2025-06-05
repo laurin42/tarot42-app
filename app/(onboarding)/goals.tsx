@@ -24,9 +24,9 @@ import {
   SECURE_STORE_BEARER_TOKEN_KEY,
 } from "../../constants/profileConstants";
 
-import { useProfileFormCache } from "../../hooks/useProfileFormCache";
+import { useProfileFormCache } from "../../hooks/forms/useProfileFormCache";
 import { useSession } from "../../providers/SessionProvider";
-import { useBirthdayPicker } from "../../hooks/useBirthdayPicker";
+import { useBirthdayPicker } from "../../hooks/forms/useBirthdayPicker";
 import { validateForm } from "../../utils/formValidation";
 import type { FormData } from "../../types/profileForm";
 import type { FormCache } from "../../types/profileForm";

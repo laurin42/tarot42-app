@@ -4,7 +4,7 @@ import React, { useEffect } from "react";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { useFonts } from "expo-font";
 import { SessionProvider, useSession } from "../providers/SessionProvider";
-import { useOnboarding } from "../hooks/useOnboarding";
+import { useOnboarding } from "../hooks/onboarding/useOnboarding";
 
 // Routing Logic Component (inside SessionProvider)
 function AppNavigator() {
