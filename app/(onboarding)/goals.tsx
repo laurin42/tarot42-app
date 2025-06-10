@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import { useRouter, useLocalSearchParams } from "expo-router";
+
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { styles } from "../../styles/detailsScreen";
@@ -28,8 +29,7 @@ import { useProfileFormCache } from "../../hooks/forms/useProfileFormCache";
 import { useSession } from "../../providers/SessionProvider";
 import { useBirthdayPicker } from "../../hooks/forms/useBirthdayPicker";
 import { validateForm } from "../../utils/formValidation";
-import type { FormData } from "../../types/profileForm";
-import type { FormCache } from "../../types/profileForm";
+import type { FormData, FormCache } from "../../types/profile";
 
 export default function goalsScreen() {
   const router = useRouter();
@@ -43,10 +43,14 @@ export default function goalsScreen() {
 
   const [personalGoal, setPersonalGoal] = useState("");
   const [additionalDetails, setAdditionalDetails] = useState("");
+
   const [selectedGender, setSelectedGender] = useState<string>("");
   const [selectedAgeRange, setSelectedAgeRange] = useState<string>("");
+
   const [selectedFocusArea, setSelectedFocusArea] = useState<string>("");
+
   const birthdayPicker = useBirthdayPicker();
+
   const [isLoading, setIsLoading] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 

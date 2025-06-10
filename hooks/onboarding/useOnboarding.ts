@@ -1,6 +1,6 @@
 // hooks/useOnboarding.ts
 import { useState, useEffect } from "react";
-import { authClient } from "../lib/auth-client";
+import { authClient } from "../../lib/auth-client";
 import { 
   checkOnboardingStatus, 
   markOnboardingCompleted, 
@@ -8,7 +8,7 @@ import {
   debugOnboardingStatus,
   debugBackendProfile,
   OnboardingStatus 
-} from "../utils/onboardingUtils";
+} from "../../utils/onboardingUtils";
 
 export const useOnboarding = () => {
   const { data: session, isPending } = authClient.useSession();

@@ -9,7 +9,7 @@ import {
 import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { authClient } from "../../lib/auth-client";
-import { useOnboarding } from "../../hooks/useOnboarding";
+import { useOnboarding } from "../../hooks//onboarding/useOnboarding";
 
 export default function WelcomeScreen() {
   const router = useRouter();

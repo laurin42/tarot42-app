@@ -27,7 +27,7 @@ export default function ProfileScreen() {
   const router = useRouter();
 
   const {
-    userProfile,
+    profileData,
     userGoals,
     isLoading: isLoadingProfile,
     error,
@@ -71,7 +71,7 @@ export default function ProfileScreen() {
     );
   }
 
-  const completeness = getProfileCompleteness(userProfile);
+  const completeness = getProfileCompleteness(profileData);
 
   return (
     <ScrollView
@@ -88,7 +88,9 @@ export default function ProfileScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.welcomeText}>Willkommen zurück,</Text>
-        <Text style={styles.nameText}>{userProfile?.name || "Nutzer"}! 👋</Text>
+        <Text style={styles.nameText}>
+          {profileData?.userName || "Nutzer"}! 👋
+        </Text>
       </View>
 
       {error && (
@@ -118,26 +120,26 @@ export default function ProfileScreen() {
       <ProfileCard
         title="Basis-Informationen"
         icon="person"
-        isEmpty={!userProfile?.email}
+        isEmpty={!profileData?.email}
       >
         <ProfileInfoRow
           label="E-Mail"
-          value={userProfile?.email || "Nicht angegeben"}
+          value={profileData?.email || "Nicht angegeben"}
         />
-        {userProfile?.birthDateTime && (
+        {profileData?.birthDateTime && (
           <ProfileInfoRow
-            label={userProfile.includeTime ? "Geburt" : "Geburtstag"}
-            value={userProfile.birthDateTime}
+            label={profileData.includeTime ? "Geburt" : "Geburtstag"}
+            value={profileData.birthDateTime}
           />
         )}
-        {userProfile?.gender && (
+        {profileData?.gender && (
           <ProfileInfoRow
             label="Geschlecht"
-            value={getGenderLabel(userProfile.gender)}
+            value={getGenderLabel(profileData.gender)}
           />
         )}
-        {userProfile?.ageRange && (
-          <ProfileInfoRow label="Altersbereich" value={userProfile.ageRange} />
+        {profileData?.ageRange && (
+          <ProfileInfoRow label="Altersbereich" value={profileData.ageRange} />
         )}
       </ProfileCard>
 
@@ -145,15 +147,15 @@ export default function ProfileScreen() {
       <ProfileCard
         title="Astrologische Daten"
         icon="star"
-        isEmpty={!userProfile?.zodiacSign && !userProfile?.element}
+        isEmpty={!profileData?.zodiacSign && !profileData?.element}
       >
-        {userProfile?.zodiacSign ? (
-          <ProfileInfoRow label="Sternzeichen" value={userProfile.zodiacSign} />
+        {profileData?.zodiacSign ? (
+          <ProfileInfoRow label="Sternzeichen" value={profileData.zodiacSign} />
         ) : (
           <EmptyText text="Kein Sternzeichen ausgewählt" />
         )}
-        {userProfile?.element ? (
-          <ProfileInfoRow label="Element" value={userProfile.element} />
+        {profileData?.element ? (
+          <ProfileInfoRow label="Element" value={profileData.element} />
         ) : (
           <EmptyText text="Kein Element ausgewählt" />
         )}
@@ -163,27 +165,27 @@ export default function ProfileScreen() {
       <ProfileCard
         title="Ziele & Fokus"
         icon="target"
-        isEmpty={!userProfile?.personalGoals && !userProfile?.focusArea}
+        isEmpty={!profileData?.selectedGoalText && !profileData?.focusArea}
       >
-        {userProfile?.personalGoals ? (
+        {profileData?.selectedGoalText ? (
           <View style={styles.goalSection}>
             <Text style={styles.infoLabel}>Persönliches Ziel:</Text>
-            <Text style={styles.goalText}>{userProfile.personalGoals}</Text>
+            <Text style={styles.goalText}>{profileData.selectedGoalText}</Text>
           </View>
         ) : (
           <EmptyText text="Keine persönlichen Ziele definiert" />
         )}
-        {userProfile?.focusArea && (
+        {profileData?.focusArea && (
           <ProfileInfoRow
             label="Fokusbereich"
-            value={getFocusAreaLabel(userProfile.focusArea)}
+            value={getFocusAreaLabel(profileData.focusArea)}
           />
         )}
-        {userProfile?.additionalDetails && (
+        {profileData?.additionalDetails && (
           <View style={styles.goalSection}>
             <Text style={styles.infoLabel}>Zusätzliche Details:</Text>
             <Text style={styles.detailsText}>
-              {userProfile.additionalDetails}
+              {profileData.additionalDetails}
             </Text>
           </View>
         )}

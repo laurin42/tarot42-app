@@ -7,10 +7,7 @@ interface ProfileInfoRowProps {
   value: string;
 }
 
-export const ProfileInfoRow: React.FC<ProfileInfoRowProps> = ({
-  label,
-  value,
-}) => (
+export const ProfileInfoRow = ({ label, value }: ProfileInfoRowProps) => (
   <View style={styles.infoRow}>
     <Text style={styles.infoLabel}>{label}:</Text>
     <Text style={styles.infoValue}>{value}</Text>

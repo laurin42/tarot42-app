@@ -28,7 +28,7 @@ interface AuthData {
 }
 
 interface SessionContextType {
-  session: AuthData | null; // Das 'session'-Feld im Context hält nun AuthData
+  session: AuthData | null;
   isLoading: boolean;
   error: any;
   isAuthenticated: boolean;
@@ -37,21 +37,17 @@ interface SessionContextType {
 const SessionContext = createContext<SessionContextType | null>(null);
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const {
-    data, // 'data' ist vom Typ AuthData | null
-    isPending: isLoading,
-    error,
-  } = authClient.useSession(); //
+  const { data, isPending: isLoading, error } = authClient.useSession(); //
 
   console.log("SessionProvider data:", JSON.stringify(data, null, 2));
 
   return (
     <SessionContext.Provider
       value={{
-        session: data, // Das 'data'-Objekt direkt an 'session' im Value übergeben
+        session: data,
         isLoading,
         error,
-        isAuthenticated: !!(data && data.user && !error), // Prüft auf data und data.user
+        isAuthenticated: !!(data && data.user && !error),
       }}
     >
       {children}

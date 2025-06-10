@@ -1,31 +1,13 @@
-// hooks/useUserProfile.ts
 import { useState, useEffect, useCallback } from 'react';
-import { authClient, API_BASE_URL, SECURE_STORE_BEARER_TOKEN_KEY } from '../lib/auth-client';
+import { authClient, API_BASE_URL, SECURE_STORE_BEARER_TOKEN_KEY } from '../../lib/auth-client';
+import type { ProfileData, UserGoal } from '../../types/profile';
 import * as SecureStore from 'expo-secure-store';
 
-interface UserProfile {
-  name?: string;
-  email?: string;
-  zodiacSign?: string;
-  element?: string;
-  personalGoals?: string;
-  additionalDetails?: string;
-  focusArea?: string;
-  gender?: string;
-  ageRange?: string;
-  birthDateTime?: string;
-  includeTime?: boolean;
-}
 
-interface UserGoal {
-  id: string;
-  goalText: string;
-  createdAt: string;
-  isAchieved: boolean;
-}
 
+// Custom hook to manage user profile data
 export const useUserProfile = () => {
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [userGoals, setUserGoals] = useState<UserGoal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,33 +43,49 @@ export const useUserProfile = () => {
       return;
     }
 
+
+    // Fetch profile data
     try {
-      // Fetch profile data
       const profileResponse = await fetch(`${API_BASE_URL}/api/profile`, {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,
         },
+        
       });
-
+      
+      let fetchedProfileData: Partial<ProfileData> = {}; 
+      
       if (!profileResponse.ok) {
         throw new Error('Fehler beim Laden des Profils.');
       }
 
-      const profileData = await profileResponse.json();
-      setUserProfile({
-        name: profileData.name || sessionData.user?.name || 'Nutzer',
-        email: profileData.email || sessionData.user?.email,
-        zodiacSign: profileData.zodiacSign,
-        element: profileData.element,
-        personalGoals: profileData.personalGoals,
-        additionalDetails: profileData.additionalDetails,
-        focusArea: profileData.focusArea,
-        gender: profileData.gender,
-        ageRange: profileData.ageRange,
-        birthDateTime: profileData.birthDateTime,
-        includeTime: profileData.includeTime,
-      });
+      else {
+      const profileDataFromApi = await profileResponse.json();
+      fetchedProfileData = {
+        id: profileDataFromApi.id || sessionData.user?.id || '',
+        userName: profileDataFromApi.name || sessionData.user?.name || 'Nutzer',
+        email: profileDataFromApi.email || sessionData.user?.email,
+        zodiacSign: profileDataFromApi.zodiacSign,
+        element: profileDataFromApi.element,
+        userGoals: profileDataFromApi.userGoals || [],
+        additionalDetails: profileDataFromApi.additionalDetails,
+        focusArea: profileDataFromApi.focusArea,
+        gender: profileDataFromApi.gender,
+        ageRange: profileDataFromApi.ageRange,
+        birthDateTime:profileDataFromApi.birthDateTime,
+        includeTime: profileDataFromApi.includeTime,
+      };
+    }
+
+          setProfileData(prev => ({
+        ...(prev || {}), 
+        ...fetchedProfileData, 
+        userGoals: prev?.userGoals || [] 
+      } as ProfileData));
+
+
+
 
       // Fetch goals data
       const goalsResponse = await fetch(`${API_BASE_URL}/api/goals`, {
@@ -108,6 +106,9 @@ export const useUserProfile = () => {
     }
   }, [sessionData, isSessionLoading]);
 
+
+
+// Refresh function to reload data
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchData();
@@ -122,12 +123,12 @@ export const useUserProfile = () => {
   }, [fetchData, isSessionLoading]);
 
   return {
-    userProfile,
+    profileData,
     userGoals,
     isLoading,
     error,
     refreshing,
     onRefresh,
-    refetch: fetchData, // Extra function for manual refetch
+    refetch: fetchData, 
   };
 };

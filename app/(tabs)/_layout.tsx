@@ -1,7 +1,7 @@
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { Tabs } from "expo-router";
 import React from "react";
-import { AuthGuard } from "../../components/guards/AuthGard";
+import { AuthGuard } from "../../components/guards/AuthGuard";
 import { OnboardingGuard } from "../../components/guards/OnboardingGuard";
 
 export default function TabLayout() {

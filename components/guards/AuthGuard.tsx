@@ -21,7 +21,7 @@ export function AuthGuard({ children }: { children: ReactNode }) {
       console.log("[AuthGuard] Redirecting to sign-in");
       router.replace("/(auth)/sign-in");
     }
-  }, [isAuthenticated, isLoading]);
+  }, [isLoading, isAuthenticated]);
 
   if (isLoading) return <LoadingSpinner />;
   if (!isAuthenticated) return null;

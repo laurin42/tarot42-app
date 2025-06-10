@@ -1,29 +1,16 @@
-// utils/profileUtils.ts
-interface UserProfile {
-  name?: string;
-  email?: string;
-  zodiacSign?: string;
-  element?: string;
-  personalGoals?: string;
-  additionalDetails?: string;
-  focusArea?: string;
-  gender?: string;
-  ageRange?: string;
-  birthDateTime?: string;
-  includeTime?: boolean;
-}
+import type { ProfileData } from '../types/profile';
 
-export const getProfileCompleteness = (userProfile: UserProfile | null): number => {
-  if (!userProfile) return 0;
+export const getProfileCompleteness = (profileData: ProfileData | null): number => {
+  if (!profileData) return 0;
   
   const fields = [
-    userProfile.zodiacSign,
-    userProfile.element,
-    userProfile.personalGoals,
-    userProfile.focusArea,
-    userProfile.gender,
-    userProfile.ageRange,
-    userProfile.birthDateTime,
+    profileData.zodiacSign,
+    profileData.element,
+    profileData.selectedGoalText,
+    profileData.focusArea,
+    profileData.gender,
+    profileData.ageRange,
+    profileData.birthDateTime,
   ];
   
   const filledFields = fields.filter(
@@ -33,17 +20,17 @@ export const getProfileCompleteness = (userProfile: UserProfile | null): number 
   return Math.round((filledFields / fields.length) * 100);
 };
 
-export const isProfileComplete = (userProfile: UserProfile | null): boolean => {
-  return getProfileCompleteness(userProfile) === 100;
+export const isProfileComplete = (profileData: ProfileData | null): boolean => {
+  return getProfileCompleteness(profileData) === 100;
 };
 
-export const getMissingFields = (userProfile: UserProfile | null): string[] => {
-  if (!userProfile) return ['zodiacSign', 'element', 'personalGoals', 'focusArea', 'gender', 'ageRange', 'birthDateTime'];
+export const getMissingFields = (profileData: ProfileData | null): string[] => {
+  if (!profileData) return ['zodiacSign', 'element', 'selectedGoalText', 'focusArea', 'gender', 'ageRange', 'birthDateTime'];
   
   const fieldMap = {
     zodiacSign: 'Sternzeichen',
     element: 'Element',
-    personalGoals: 'Persönliche Ziele',
+    selectedGoalText: 'Persönliche Ziele',
     focusArea: 'Fokusbereich',
     gender: 'Geschlecht',
     ageRange: 'Altersbereich',
@@ -53,7 +40,7 @@ export const getMissingFields = (userProfile: UserProfile | null): string[] => {
   const missingFields: string[] = [];
   
   Object.entries(fieldMap).forEach(([key, label]) => {
-    const value = userProfile[key as keyof UserProfile];
+    const value = profileData[key as keyof ProfileData];
     if (!value || value.toString().trim() === '') {
       missingFields.push(label);
     }

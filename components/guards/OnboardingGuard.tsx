@@ -3,7 +3,7 @@ import { View, ActivityIndicator, Text } from "react-native";
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
 import { useSession } from "../../providers/SessionProvider";
-import { useOnboarding } from "../../hooks/useOnboarding";
+import { useOnboarding } from "../../hooks/onboarding/useOnboarding";
 
 // Loading Spinner Component
 const LoadingSpinner = () => (
@@ -19,6 +19,7 @@ export function OnboardingGuard({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
+    //TODO -> is this logic correct?
     if (isAuthenticated && !isLoading && shouldShowWelcome) {
       console.log("[OnboardingGuard] Redirecting to welcome");
       router.replace("/(onboarding)/welcome");

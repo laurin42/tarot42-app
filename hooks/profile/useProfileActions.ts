@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { authClient } from '../lib/auth-client';
+import { authClient } from '../../lib/auth-client';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 interface BetterAuthErrorWithType extends Error {

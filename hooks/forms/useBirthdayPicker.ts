@@ -1,7 +1,5 @@
-// hooks/useBirthdayPicker.ts
 import { useState, useCallback } from 'react';
-// Stelle sicher, dass UseBirthdayPickerReturn jetzt loadBirthdayData etc. aus types/profileForm.ts enthält
-import { UseBirthdayPickerReturn, BirthdayData } from '../../types/profileForm'; 
+import { UseBirthdayPickerReturn, BirthdayData } from '../../types/profile'; 
 import {
   formatDateForDisplay,
   formatTimeForDisplay,

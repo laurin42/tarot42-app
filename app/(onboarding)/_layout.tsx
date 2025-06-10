@@ -1,6 +1,6 @@
 import { Stack } from "expo-router";
 import React from "react";
-import { AuthGuard } from "../../components/guards/AuthGard";
+import { AuthGuard } from "../../components/guards/AuthGuard";
 
 export default function IchStackNavigator() {
   return (

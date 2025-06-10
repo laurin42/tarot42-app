@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { getFormCacheKey } from '../../constants/profileConstants'; // Annahme: Pfad angepasst
-import type { FormCache } from '../../types/profileForm'; // Annahme: FormCache wurde verschoben
+import type { FormCache } from '../../types/profile'; // Annahme: FormCache wurde verschoben
 
 const CACHE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 Stunden
 

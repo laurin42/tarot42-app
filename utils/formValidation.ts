@@ -1,5 +1,5 @@
 // utils/formValidation.ts
-import { FormData } from '../types/profileForm';
+import { FormData } from '../types/profile';
 import { 
   FORM_LIMITS,
   isValidGenderKey,
