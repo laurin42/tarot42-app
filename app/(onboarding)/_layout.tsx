@@ -2,7 +2,7 @@ import { Stack } from "expo-router";
 import React from "react";
 import { AuthGuard } from "../../components/guards/AuthGuard";
 
-export default function IchStackNavigator() {
+export default function OnBoardingStackNavigator() {
   return (
     <AuthGuard>
       <Stack>

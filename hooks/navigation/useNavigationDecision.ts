@@ -61,8 +61,8 @@ export function useNavigationDecision() {
     if (!actualOnboardingCompleted) {
       router.replace(
         shouldShowWelcome
-          ? "/(onboarding)/welcome"
-          : "/(onboarding)/zodiacSign"
+        ? "/(onboarding)/zodiacSign"
+          : "/(onboarding)/welcome"
       );
     } else {
       router.replace("/(tabs)/profile");

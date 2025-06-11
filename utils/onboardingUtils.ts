@@ -1,4 +1,3 @@
-// utils/onboardingUtils.ts
 import * as SecureStore from "expo-secure-store";
 
 const ONBOARDING_COMPLETED_KEY = "onboarding_completed";
@@ -11,9 +10,7 @@ export interface OnboardingStatus {
   debugInfo?: string;
 }
 
-/**
- * TEMPORÄRE Debug-Version - nur SecureStore, kein AsyncStorage
- */
+
 export const checkOnboardingStatus = async (userId: string): Promise<OnboardingStatus> => {
   console.log("[OnboardingUtils] 🔍 Checking status for user:", userId);
   

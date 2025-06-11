@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
-import { styles } from "../../styles/ElementScreen";
+import { styles } from "../../styles/elementScreen";
 import { FontAwesome } from "@expo/vector-icons";
 import { authClient } from "../../lib/auth-client";
 
