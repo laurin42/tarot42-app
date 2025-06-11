@@ -6,10 +6,10 @@ import {
   Alert,
   TouchableOpacity,
   Text,
-  StyleSheet,
 } from "react-native";
 import { authClient } from "../../lib/auth-client";
 import { useRouter, Href, Link } from "expo-router";
+import { styles } from "../../styles/signUpScreen";
 
 export default function SignUpScreen() {
   const router = useRouter();
@@ -107,28 +107,3 @@ export default function SignUpScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    padding: 20,
-  },
-  input: {
-    height: 40,
-    borderColor: "gray",
-    borderWidth: 1,
-    marginBottom: 12,
-    paddingHorizontal: 8,
-  },
-  signInLinkContainer: {
-    marginTop: 15,
-    alignItems: "center",
-  },
-  signInLinkText: {
-    color: "blue",
-  },
-  signInLinkTextBold: {
-    fontWeight: "bold",
-  },
-});

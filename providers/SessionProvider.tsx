@@ -1,45 +1,47 @@
-import React, { createContext, useContext, ReactNode } from "react";
-import { authClient } from "../lib/auth-client"; //
-
-interface ApiUser {
-  id: string;
-  name: string;
-  email: string;
-  emailVerified: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  image?: string | null;
-}
-
-interface ApiSessionDetails {
-  id: string;
-  token: string;
-  userId: string;
-  createdAt: Date;
-  updatedAt: Date;
-  expiresAt: Date;
-  ipAddress?: string | null;
-  userAgent?: string | null;
-}
-
-interface AuthData {
-  user: ApiUser;
-  session: ApiSessionDetails;
-}
-
-interface SessionContextType {
-  session: AuthData | null;
-  isLoading: boolean;
-  error: any;
-  isAuthenticated: boolean;
-}
+import React, {
+  createContext,
+  useContext,
+  ReactNode,
+  useEffect,
+  useCallback,
+} from "react";
+import { SessionContextType } from "../types/auth/auth";
+import { authClient, clearStoredBearerToken } from "../lib/auth-client";
+import { DeviceEventEmitter } from "react-native";
 
 const SessionContext = createContext<SessionContextType | null>(null);
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const { data, isPending: isLoading, error } = authClient.useSession(); //
-
+  const {
+    data,
+    isPending: isLoading,
+    error,
+    refetch,
+  } = authClient.useSession();
   console.log("SessionProvider data:", JSON.stringify(data, null, 2));
+
+  const signOut = useCallback(async () => {
+    await clearStoredBearerToken();
+    refetch();
+  }, [refetch]);
+
+  useEffect(() => {
+    const handleAuthError = () => {
+      console.log(
+        '[SessionProvider] "auth-token-invalid" event caught from DeviceEventEmitter. Signing out.'
+      );
+      signOut();
+    };
+
+    const subscription = DeviceEventEmitter.addListener(
+      "auth-token-invalid",
+      handleAuthError
+    );
+
+    return () => {
+      subscription.remove();
+    };
+  }, [signOut]);
 
   return (
     <SessionContext.Provider
@@ -48,6 +50,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         isLoading,
         error,
         isAuthenticated: !!(data && data.user && !error),
+        signOut,
       }}
     >
       {children}

@@ -15,7 +15,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { styles } from "../../styles/detailsScreen";
+import { styles } from "../../styles/goalsScreen";
 
 import {
   GENDER_OPTIONS,

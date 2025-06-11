@@ -2,6 +2,8 @@ import { createAuthClient } from "better-auth/react";
 import { expoClient } from "@better-auth/expo/client";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
+import { DeviceEventEmitter } from "react-native";
+
 
 const backendBaseURL = Platform.OS === 'web'
     ? "http://localhost:3000/api/auth"
@@ -14,6 +16,12 @@ export const API_BASE_URL = Platform.OS === 'web'
 
 // Make this key exportable to ensure consistency across the app
 export const SECURE_STORE_BEARER_TOKEN_KEY = 'tarot42.bearerAuthToken';
+
+const signalUnauthorizedAccess = () => {
+    console.log('[auth-client] Signaling unauthorized access to the app.');
+    // Sende ein globales Event. Der SessionProvider wird darauf hören.
+    DeviceEventEmitter.emit('auth-token-invalid', {});
+}
 
 export const authClient = createAuthClient({
     baseURL: backendBaseURL,
@@ -52,9 +60,10 @@ export const authClient = createAuthClient({
                     console.log(`[authClient] Attempting to delete token with key: ${SECURE_STORE_BEARER_TOKEN_KEY} due to 401`);
                     await SecureStore.deleteItemAsync(SECURE_STORE_BEARER_TOKEN_KEY);
                     console.log('[authClient fetchOptions.onError] Cleared token due to 401 on authClient request.');
+                    signalUnauthorizedAccess();
                 }
             }
-            // Add any other global error handling for authClient requests here
+
         }
     }
 });
@@ -76,8 +85,6 @@ export const clearStoredBearerToken = async (): Promise<void> => {
         await SecureStore.deleteItemAsync(SECURE_STORE_BEARER_TOKEN_KEY);
         console.log('[clearStoredBearerToken] Token cleared from SecureStore.');
     }
-    // It's good practice to also tell authClient to sign out,
-    // which might clear its internal session state if any.
     try {
         await authClient.signOut({ fetchOptions: { onSuccess: () => console.log("Signed out from authClient after clearing token.")}});
     } catch (e) {
@@ -85,15 +92,9 @@ export const clearStoredBearerToken = async (): Promise<void> => {
     }
 };
 
-// --- How to use for your protected API calls (e.g., to /api/profile, /api/goals) ---
-// The `authClient` configured above with `fetchOptions.auth` will AUTOMATICALLY
-// try to attach the bearer token to requests it makes (e.g. authClient.getSession()).
-//
-// For general API calls to your *other* backend endpoints (NOT through authClient methods),
-// you still need to fetch the token and attach it manually.
 
 export const fetchProtectedData = async (endpoint: string, options: RequestInit = {}): Promise<Response> => {
-    const token = await getStoredBearerToken(); // Use the helper
+    const token = await getStoredBearerToken();
     const headers = new Headers(options.headers || {});
 
     if (token) {
@@ -110,16 +111,11 @@ export const fetchProtectedData = async (endpoint: string, options: RequestInit 
     // Handle 401 for these custom fetch calls specifically if needed
     if (!response.ok && response.status === 401 && token) {
         console.log(`[fetchProtectedData] Received 401 for ${endpoint}. Token might be invalid/expired.`);
-        // Optionally, clear token here if this 401 implies the stored token is definitively bad.
-        // await clearStoredBearerToken();
-        // Consider redirecting to login or attempting a silent refresh if you implement that.
+        signalUnauthorizedAccess();
     }
     return response;
 };
 
-// The storeTokenFromHeaders function might still be useful if you want to call it
-// explicitly in a component after a specific action, though the global onSuccess
-// in fetchOptions should cover most cases for authClient initiated requests.
 export const storeTokenFromHeaders = async (headers: Headers) => {
     const authToken = headers.get("set-auth-token");
     if (authToken) {

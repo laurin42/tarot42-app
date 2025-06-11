@@ -21,7 +21,7 @@ export function useNavigationDecision() {
 
     const inAuthGroup = segments[0] === "(auth)";
     const inOnboardingGroup = segments[0] === "(onboarding)";
-    const currentRoute = segments.join("/") || "/";
+    const isAtRoot = segments.join("/") || "/";
 
     console.log("[useNavigationDecision] Routing decision", {
       isAuthenticated,
@@ -29,53 +29,60 @@ export function useNavigationDecision() {
       shouldShowWelcome,
       inAuthGroup,
       inOnboardingGroup,
-      currentRoute,
+      isAtRoot,
     });
 
-    if (isAuthenticated) {
-      if (inAuthGroup) {
-        if (!actualOnboardingCompleted) {
-          router.replace(
-            shouldShowWelcome
-              ? "/(onboarding)/welcome"
-              : "/(onboarding)/zodiacSign"
-          );
-        } else {
-          router.replace("/(tabs)/profile");
-        }
-      } else if (inOnboardingGroup) {
-        if (actualOnboardingCompleted) {
-          router.replace("/(tabs)/profile");
-        }
-        // else: noch im Onboarding, nichsts tun
-      } else if (
-        // TODO: investigate this ts error
-        segments.length === 0 ||
-        currentRoute === "/" ||
-        currentRoute === "(tabs)"
-      ) {
-        if (!actualOnboardingCompleted) {
-          router.replace(
-            shouldShowWelcome
-              ? "/(onboarding)/welcome"
-              : "/(onboarding)/zodiacSign"
-          );
-        } else if (segments.length === 0 || currentRoute === "/") {
-          router.replace("/(tabs)/profile");
-        }
-      }
-    } else {
+    if (!isAuthenticated) {
+      //user not logged in
       if (!inAuthGroup) {
         router.replace("/(auth)/sign-in");
       }
+      return;
     }
-  }, [
-    isAuthenticated,
-    actualOnboardingCompleted,
-    shouldShowWelcome,
-    sessionLoading,
-    onboardingLoading,
-    segments,
-    router,
-  ]);
-}
+
+    // NOW THE USER IS LOGGED IN (isAuthenticated === true)
+
+ // First Case: user is in Root (App start)
+  if (isAtRoot) {
+    if (!actualOnboardingCompleted) {
+      router.replace(
+        shouldShowWelcome
+          ? "/(onboarding)/welcome"
+          : "/(onboarding)/zodiacSign"
+      );
+    } else {
+      router.replace("/(tabs)/profile");
+    }
+    return;
+  }
+
+  // Second Case: User is mistakenly in Auth group
+  if (inAuthGroup) {
+    if (!actualOnboardingCompleted) {
+      router.replace(
+        shouldShowWelcome
+          ? "/(onboarding)/welcome"
+          : "/(onboarding)/zodiacSign"
+      );
+    } else {
+      router.replace("/(tabs)/profile");
+    }
+    return;
+  }
+
+  // Third Case: User is in onboarding group
+  if (inOnboardingGroup) {
+    if (actualOnboardingCompleted) {
+      router.replace("/(tabs)/profile");
+    }
+    return;
+  }
+}, [
+  isAuthenticated,
+  actualOnboardingCompleted,
+  shouldShowWelcome,
+  sessionLoading,
+  onboardingLoading,
+  segments,
+  router,
+])};
